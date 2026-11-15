@@ -140,8 +140,8 @@ function viewQueue(p){
   if(p.status==='break')return h+'<div class="card"><h2>You’re on a break</h2><p class="sub" style="margin-bottom:14px">Your spot is paused. Tap below when you’re ready and you’ll join the back of the line.</p><button class="btn" data-go="back"'+(req.want==='play'?' disabled>Rejoining…':'>I’m back</button>').replace('Rejoining…','Rejoining…</button>')+'</div>';
   if(p.status==='court'||p.status==='hold'){
     var c=where(p), g=c&&c.game, mine=g?(g.a.indexOf(p.id)>=0?g.a:g.b):[], opp=g?(g.a.indexOf(p.id)>=0?g.b:g.a):[];
-    var brk=req.want==='break'?'<p class="foot" style="margin:0 0 12px">You’ll go on a break after this game.</p>':'';
-    return h+brk+'<div class="spot"><small>YOU’RE ON</small><div class="num"><b>'+(c?c.id:'')+'</b><div><strong>Court '+(c?c.id:'')+'</strong>Have a great game</div></div>'+(g?'<div class="chips"><span class="you">'+esc(mine.map(function(i){return first(nm(i));}).join(' · '))+'</span><span>'+esc(opp.map(function(i){return first(nm(i));}).join(' · '))+'</span></div>':'')+'</div>'+(req.want==='break'?'':'<button class="btn out" data-go="break">Take a break after this game</button>');
+    var brk=(req.want==='break'||p.breakNext)?'<p class="foot" style="margin:0 0 12px">You’ll go on a break after this game.</p>':'';
+    return h+brk+'<div class="spot"><small>YOU’RE ON</small><div class="num"><b>'+(c?c.id:'')+'</b><div><strong>Court '+(c?c.id:'')+'</strong>Have a great game</div></div>'+(g?'<div class="chips"><span class="you">'+esc(mine.map(function(i){return first(nm(i));}).join(' · '))+'</span><span>'+esc(opp.map(function(i){return first(nm(i));}).join(' · '))+'</span></div>':'')+'</div>'+((req.want==='break'||p.breakNext)?'':'<button class="btn out" data-go="break">Take a break after this game</button>');
   }
   var gs=groups(), gi=0, size=st.settings.size||4;
   gs.forEach(function(g,i){if(g.indexOf(p.id)>=0)gi=i;});
