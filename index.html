@@ -4,460 +4,211 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3EADB">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>brickstack: open play queue</title>
+<title>brickstack: join the queue</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#F3EADB; --surface:#FFFBF3; --ink:#25201D; --muted:#6B5F57; --line:#E0D5C4;
-  --brick:#A93F27; --lime:#D4E64A; --on-lime:#25201D; --tile:#362F2B; --deck:#F3EADB; --danger:#A93F27;
-  --font:"Outfit","Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;
-  --nav-h:72px; --side-w:232px;
-  box-sizing:border-box;
-}
+:root{--bg:#F3EADB;--surface:#FFFBF3;--ink:#25201D;--muted:#6B5F57;--line:#E0D5C4;--brick:#A93F27;--lime:#D4E64A;--tile:#362F2B;--nav-h:72px;--font:"Outfit","Avenir Next","Segoe UI",system-ui,sans-serif;box-sizing:border-box}
 *,*::before,*::after{box-sizing:inherit}
-html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.4;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-h1,h2,h3{margin:0;line-height:1.1;letter-spacing:-.02em;font-weight:700}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.4;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+h1,h2,h3{margin:0;line-height:1.05;letter-spacing:-.03em;font-weight:800}
 button,input{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--brick);outline-offset:2px}
-
-/* shell: top bar + bottom tabs on phones, left sidebar on iPad and up */
-.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:env(safe-area-inset-top,0px) 20px 0}
-.top-in{display:flex;align-items:center;justify-content:space-between;padding:14px 0 10px}
+.wrap{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 14px) 20px calc(var(--nav-h) + 36px + env(safe-area-inset-bottom,0px))}
+.bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .mark{display:flex;align-items:center;gap:12px;font-weight:800;font-size:1.7rem;letter-spacing:-.04em;line-height:1}
 .mark small{display:block;font-weight:500;font-size:.8rem;letter-spacing:0;color:var(--muted);margin-top:3px}
 .mark svg{width:34px;height:34px;flex:none}
-.avatar{width:46px;height:46px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:1rem}
-nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px 9px;min-height:var(--nav-h);justify-content:center;text-decoration:none;color:var(--muted);font-weight:600;font-size:.82rem}
-nav a svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-nav a[aria-current="page"]{color:var(--brick);font-weight:700}
-.side-foot{display:none}
-.top .bar{fill:#25201D}
-main{padding:12px 20px calc(var(--nav-h) + 40px + env(safe-area-inset-bottom,0px));max-width:760px;margin:0 auto}
-
-@media (min-width:768px){
-  .top{position:fixed;left:0;top:0;bottom:0;width:var(--side-w);background:var(--ink);color:var(--bg);padding:24px 16px;display:flex;flex-direction:column}
-  .top-in{display:block;padding:0}
-  .top-in .avatar{display:none}
-  .mark{color:var(--bg);padding:0 8px 28px}
-  .top .bar{fill:#F3EADB}
-  nav{position:static;display:block;background:none;border:0;padding:0}
-  nav a{flex-direction:row;gap:0;min-height:50px;padding:0 16px;margin-bottom:6px;border-radius:12px;justify-content:flex-start;color:var(--bg);font-size:1.02rem;font-weight:600}
-  nav a svg{display:none}
-  nav a[aria-current="page"]{background:var(--brick);color:#fff}
-  .side-foot{display:block;margin-top:auto;background:var(--tile);border-radius:14px;padding:14px 16px;font-size:.85rem;color:#CFC4B6}
-  .side-foot b{display:block;color:var(--bg);font-size:1rem;margin:2px 0}
-  .side-foot i{font-style:normal;color:var(--lime);font-weight:700;letter-spacing:.08em;font-size:.75rem}
-  main{margin-left:var(--side-w);max-width:none;padding:28px 32px 48px}
-}
-
-/* controls: 48px touch targets */
-.btn{min-height:48px;padding:0 20px;border-radius:14px;border:1.5px solid var(--ink);background:transparent;font-weight:650;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
-.btn.primary{background:var(--brick);color:#fff;border-color:var(--brick)}
-.btn.dark{background:var(--ink);color:var(--bg)}
-.btn.quiet{border-color:var(--line);background:var(--surface);font-weight:600}
-.btn.small{min-height:44px;padding:0 14px;font-size:.95rem}
-.btn.warn{color:var(--danger);border-color:var(--danger);background:transparent}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn.wide{width:100%}
-.link{background:none;border:0;text-decoration:underline;font-weight:600;min-height:48px;cursor:pointer;padding:0 12px}
-
-.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:4px 0 18px;flex-wrap:wrap}
-.page-head h1{font-size:clamp(2rem,6vw,2.6rem);font-weight:800;letter-spacing:-.04em}
-.page-head p{margin:6px 0 0;color:var(--muted)}
-.live{display:inline-flex;align-items:center;gap:8px;background:var(--surface);padding:10px 16px;border-radius:999px;font-weight:600;font-size:.95rem}
-.live::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--brick)}
-
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:22px}
-@media (min-width:600px){.stats{grid-template-columns:repeat(4,1fr)}}
-.stat{background:var(--surface);border-radius:18px;padding:14px 16px}
-.stat small{color:var(--muted);font-size:.85rem;display:block}
-.stat b{font-size:1.9rem;font-weight:800;letter-spacing:-.03em;display:block;margin-top:2px}
-
-.board{display:grid;gap:22px}
-@media (min-width:1100px){.board{grid-template-columns:1fr 380px;align-items:start}}
-.sec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.sec-head h2{font-size:1.4rem;font-weight:800}
-.sec-head span{color:var(--muted);font-size:.92rem}
-.courts{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
-.court{background:var(--surface);border-radius:20px;padding:16px}
-.court-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.court-head h3{font-size:1.25rem}
-.pill{font-size:.78rem;font-weight:700;padding:4px 11px;border-radius:999px;background:var(--ink);color:var(--bg);white-space:nowrap}
+.avatar{width:46px;height:46px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:1rem;flex:none}
+.avatar.brick{background:var(--brick);color:#fff}.avatar.lime{background:var(--lime);color:var(--ink)}
+h1.big{font-size:clamp(2.2rem,10vw,3rem);margin-bottom:8px}
+.sub{color:var(--muted);margin:0 0 18px;font-size:1.05rem}
+.dark{background:var(--ink);color:var(--bg);border-radius:28px;padding:20px;margin-bottom:16px}
+.dark .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tag{background:var(--lime);color:var(--ink);font-weight:800;letter-spacing:.1em;font-size:.82rem;padding:7px 14px;border-radius:999px}
+.tag.off{background:var(--tile);color:#CFC4B6}
+.dark h2{font-size:1.45rem;margin:14px 0}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tiles div{background:var(--tile);border-radius:16px;padding:12px 14px}
+.tiles b{display:block;font-size:1.9rem;font-weight:800;letter-spacing:-.03em}
+.tiles span{color:#CFC4B6;font-size:.9rem}
+.card{background:var(--surface);border-radius:28px;padding:20px;margin-bottom:16px}
+.card h2{font-size:1.35rem;margin-bottom:12px}
+label.l{display:block;font-weight:700;margin:0 0 8px}
+.field{width:100%;min-height:56px;border-radius:16px;border:1.5px solid var(--line);background:#fff;padding:0 16px;font-size:1.05rem;margin-bottom:18px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.seg button{min-height:52px;border-radius:16px;border:1.5px solid var(--line);background:#fff;font-weight:600;cursor:pointer;padding:0 4px}
+.seg button[aria-pressed="true"].s{background:var(--brick);color:#fff;border-color:var(--brick)}
+.seg button[aria-pressed="true"].p{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn{min-height:60px;width:100%;border-radius:20px;border:0;background:var(--brick);color:#fff;font-weight:800;font-size:1.15rem;cursor:pointer}
+.btn:disabled{opacity:.45}
+.btn.out{background:transparent;border:1.5px solid var(--brick);color:var(--brick);min-height:56px}
+.foot{text-align:center;color:var(--muted);margin:6px 0 0;font-size:.95rem}
+.err{color:var(--brick);min-height:1.3em;margin:-8px 0 8px;font-size:.92rem}
+.spot{background:var(--brick);color:#fff;border-radius:32px;padding:22px;margin-bottom:16px}
+.spot small{letter-spacing:.14em;font-weight:800;font-size:.9rem}
+.spot .num{display:flex;align-items:flex-end;gap:14px;margin:6px 0 16px}
+.spot .num b{font-size:7rem;line-height:.85;font-weight:800;letter-spacing:-.06em}
+.spot .num div{padding-bottom:6px;font-size:1.1rem}.spot .num strong{display:block;font-size:1.7rem;font-weight:700}
+.chips{display:flex;gap:10px}
+.chips span{flex:1;text-align:center;background:var(--ink);color:#fff;border-radius:12px;padding:13px 4px;font-weight:700;font-size:.95rem}
+.chips span.you{background:var(--lime);color:var(--ink)}
+.head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:14px}
+.head span{color:var(--muted);font-size:.95rem}
+.people{display:flex;justify-content:space-between}
+.people div{text-align:center;flex:1;font-size:.95rem;min-width:0}
+.people .avatar{width:56px;height:56px;margin:0 auto 6px}
+.people .open{border:2px dashed var(--muted);background:transparent;color:var(--muted)}
+.ahead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.ahead:last-child{margin-bottom:0}
+.ahead .n{background:var(--ink);color:#fff;border-radius:10px;width:44px;height:40px;display:grid;place-items:center;font-weight:800;flex:none}
+.ahead .w{flex:1;min-width:0}
+.pill{font-weight:700;font-size:.9rem;padding:7px 14px;border-radius:999px;background:var(--lime);white-space:nowrap}
+.pill.line{background:transparent;border:1.5px solid var(--ink)}
+.pill.dk{background:var(--ink);color:var(--bg)}
 .pill.open{background:transparent;color:var(--brick);border:1.5px solid var(--brick)}
-.pill.hold{background:var(--lime);color:var(--on-lime)}
-.clock{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;font-size:1.15rem}
-.team{display:block;font-size:1.05rem;padding:3px 0}
-.team.b{color:var(--muted)}
-.vs{font-size:.75rem;letter-spacing:.12em;color:var(--muted);font-weight:700;margin:2px 0}
-.court-actions{display:flex;gap:10px;margin-top:14px}
-.court-actions .btn{flex:1}
-.court.open{background:transparent;border:2px dashed var(--brick)}
-.court.open p{margin:0 0 4px}
-.note{color:var(--muted);font-size:.92rem;margin:10px 0 0}
-
-.up{background:var(--surface);border-radius:22px;padding:18px}
-.group{display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:14px;padding:12px;margin-bottom:10px}
-.group .n{flex:none;width:40px;height:40px;border-radius:10px;background:var(--brick);color:#fff;display:grid;place-items:center;font-weight:800}
-.group .who{flex:1;min-width:0}
-.group .who b{display:block;font-weight:650}
-.group .who small{color:var(--muted);font-size:.85rem}
-.add-row{border-top:1px solid var(--line);padding-top:14px;margin-top:6px}
-.add-row label{display:block;font-weight:700;font-size:.95rem;margin-bottom:8px}
-.add{display:flex;gap:8px}
-.add input,.field{flex:1;min-width:0;min-height:52px;border-radius:14px;border:1.5px solid var(--line);background:#fff;padding:0 14px;font-size:1rem}
-.hint{color:var(--muted);font-size:.92rem;margin:10px 0 0}
-
-.panel{background:var(--surface);border-radius:22px;padding:18px;margin-bottom:16px}
-.panel h2{font-size:1.35rem;font-weight:800;margin-bottom:12px}
-ul.roster{list-style:none;margin:0;padding:0}
-ul.roster li{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
-ul.roster li:last-child{border-bottom:0}
-ul.roster .who{flex:1;min-width:8rem}
-ul.roster .who b{display:block}
-ul.roster .who small{color:var(--muted);font-size:.88rem}
-.empty{text-align:center;padding:48px 8px;max-width:30rem;margin:0 auto}
-.empty h1{font-size:clamp(2rem,8vw,3rem);font-weight:800;letter-spacing:-.04em;margin-bottom:12px}
-.empty p{color:var(--muted);margin:0 0 22px}
-.empty .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-
-.scroll{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
-th,td{text-align:right;padding:11px 8px;border-bottom:1px solid var(--line)}
-th{font-weight:600;color:var(--muted);font-size:.9rem}
-th:nth-child(2),td:nth-child(2){text-align:left;width:55%}
-th:first-child,td:first-child{text-align:left;width:2em}
-td:nth-child(2){font-weight:650}
-tr:last-child td{border-bottom:0}
-ul.games{list-style:none;margin:0;padding:0}
-ul.games li{padding:10px 0;border-bottom:1px solid var(--line)}
-ul.games li:last-child{border-bottom:0}
-ul.games small{color:var(--muted)}
-
-.setting{padding:16px 0;border-bottom:1px solid var(--line)}
-.setting:first-of-type{padding-top:0}
-.setting:last-child{border-bottom:0;padding-bottom:0}
-.setting h3{font-size:1.05rem;margin-bottom:4px;letter-spacing:0}
-.setting p{color:var(--muted);font-size:.92rem;margin:0 0 12px}
-.seg{display:flex;gap:8px;flex-wrap:wrap}
-.seg .btn{flex:1 1 7rem;background:var(--surface);border-color:var(--line)}
-.seg .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.stepper{display:flex;align-items:center;gap:16px}
-.stepper b{font-size:1.6rem;min-width:1.5em;text-align:center}
-
-/* score sheet */
-dialog{border:0;border-radius:24px;background:var(--bg);color:var(--ink);padding:22px 20px 14px;width:min(94vw,30rem);max-height:94vh;overflow:auto}
-dialog::backdrop{background:rgba(37,32,29,.6)}
-dialog h2{font-size:2rem;font-weight:800;letter-spacing:-.04em;margin-bottom:6px}
-dialog .sub{color:var(--muted);margin:0 0 16px}
-.tcard{background:var(--surface);border:2px solid transparent;border-radius:22px;padding:14px 16px;margin-bottom:12px}
-.tcard.win{border-color:var(--brick)}
-.tcard .lab{display:flex;justify-content:space-between;align-items:center;min-height:28px}
-.tcard .lab small{font-weight:800;letter-spacing:.12em;color:var(--muted)}
-.tcard.win .lab small{color:var(--brick)}
-.tcard .names{font-weight:600;margin:2px 0 10px}
-.badge{background:var(--lime);color:var(--on-lime);font-weight:700;font-size:.82rem;padding:5px 12px;border-radius:999px}
-.score{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.score b{font-size:3.4rem;font-weight:800;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
-.step{width:64px;height:64px;border-radius:18px;border:1.5px solid var(--line);background:#fff;font-size:1.8rem;font-weight:700;cursor:pointer;display:grid;place-items:center}
-.step.plus{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.check{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border-radius:18px;padding:14px 16px;margin-bottom:14px;cursor:pointer;min-height:64px}
-.check b{display:block}
-.check small{color:var(--muted)}
-.check input{appearance:none;-webkit-appearance:none;width:32px;height:32px;border-radius:8px;border:2px solid var(--brick);background:#fff;flex:none;display:grid;place-items:center;margin:0}
-.check input:checked{background:var(--brick)}
-.check input:checked::after{content:"";width:10px;height:18px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-2px)}
-.err{color:var(--danger);font-size:.92rem;min-height:1.3em;margin:0 0 6px;text-align:center}
-.dlg-actions{display:grid;gap:4px;justify-items:center}
-.dlg-actions .primary{width:100%;min-height:58px;font-size:1.1rem;border-radius:18px}
-
-#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:999px;font-weight:600;font-size:.95rem;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw;text-align:center}
-#toast.on{opacity:1}
-@media (min-width:768px){#toast{bottom:28px}}
-@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+.court{background:var(--surface);border-radius:26px;padding:18px;margin-bottom:14px}
+.court .h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.court .h h3{font-size:1.4rem}
+.court .h b{margin-left:auto;font-variant-numeric:tabular-nums;font-size:1.2rem}
+.court .t{padding:3px 0;font-size:1.1rem}.court .t.b{color:var(--muted)}
+.court.o{background:transparent;border:2px dashed var(--brick)}
+.court.me{outline:3px solid var(--lime)}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:none;border:0;min-height:var(--nav-h);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);font-weight:600;font-size:.82rem;cursor:pointer}
+nav svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-current="page"]{color:var(--brick);font-weight:700}
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="top-in">
-    <div class="mark">
-      <svg viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="5" width="26" height="7" rx="3.5" fill="#A93F27"/><rect x="1" y="14" width="26" height="7" rx="3.5" fill="#25201D" class="bar"/><rect x="1" y="23" width="26" height="7" rx="3.5" fill="#A93F27"/><circle cx="28.5" cy="11" r="4" fill="#D4E64A"/></svg>
-      <div>brickstack<small>The Brick Club</small></div>
-    </div>
-    <div class="avatar" aria-hidden="true">BC</div>
-  </div>
-  <nav aria-label="Sections">
-    <a href="#courts"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M3 12h18"/></svg>Courts</a>
-    <a href="#players"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Players</a>
-    <a href="#standings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Standings</a>
-    <a href="#setup"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Setup</a>
-  </nav>
-  <div class="side-foot" id="side-foot"></div>
-</header>
-<main id="app"></main>
-<dialog id="dlg" aria-labelledby="dlg-title"></dialog>
-<div id="toast" role="status" aria-live="polite"></div>
-
+<div class="wrap" id="app"></div>
+<nav id="nav" aria-label="Sections" hidden>
+  <button data-tab="queue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h12M4 17h8"/></svg>Queue</button>
+  <button data-tab="courts"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M3 12h18"/></svg>Courts</button>
+</nav>
+<script src="firebase-config.js"></script>
+<script src="store.js"></script>
 <script>
 (function(){
-var KEY='nextup-session-v1';
-var VIEWS=['courts','players','standings','setup'];
-var SAMPLE=['Maya','Dario','Priya','Tomás','Lena','Kofi','Jun','Farah','Beck','Noor'];
-function fresh(){return{players:[],queue:[],courts:[{id:1,game:null,hold:[]},{id:2,game:null,hold:[]}],history:[],settings:{size:4,rotation:'off',partners:'order',auto:false},nextId:1,started:Date.now()};}
-function load(){try{var r=localStorage.getItem(KEY);if(r){var s=JSON.parse(r);if(s&&Array.isArray(s.players)&&Array.isArray(s.courts)&&s.settings){if(!s.started)s.started=Date.now();return s;}}}catch(e){}return fresh();}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
-var S=load(), app=document.getElementById('app'), dlg=document.getElementById('dlg'), toastEl=document.getElementById('toast'), foot=document.getElementById('side-foot');
-var dstate=null, armed=null, toastT=null, focusAdd=false;
-
+var app=document.getElementById('app'), nav=document.getElementById('nav');
+var st=null, req=null, tab='queue', form={name:'',skill:'Intermediate',party:'Solo'}, err='', busy=false, loaded={s:false}, resetting=false;
+var LOGO='<svg viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="5" width="26" height="7" rx="3.5" fill="#A93F27"/><rect x="1" y="14" width="26" height="7" rx="3.5" fill="#25201D"/><rect x="1" y="23" width="26" height="7" rx="3.5" fill="#A93F27"/><circle cx="28.5" cy="11" r="4" fill="#D4E64A"/></svg>';
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function P(id){for(var i=0;i<S.players.length;i++)if(S.players[i].id===id)return S.players[i];return null;}
+function ini(n){var p=String(n).trim().split(/\s+/);return (p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
+function first(n){return String(n).trim().split(/\s+/)[0];}
+function clock(t){var s=Math.max(0,Math.floor((Date.now()-t)/1000)),m=Math.floor(s/60);s%=60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
+function P(id){return st&&st.players.filter(function(p){return p.id===id;})[0]||null;}
 function nm(id){var p=P(id);return p?p.name:'?';}
-function C(id){for(var i=0;i<S.courts.length;i++)if(S.courts[i].id===id)return S.courts[i];return null;}
-function mins(t){return Math.floor((Date.now()-t)/60000);}
-function ago(t){var m=mins(t);return m<1?'just now':m+' min';}
-function clock(t){var s=Math.max(0,Math.floor((Date.now()-t)/1000)),m=Math.floor(s/60);s=s%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
-function plural(n,w){return n+' '+w+(n===1?'':'s');}
-function toast(msg){toastEl.textContent=msg;toastEl.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){toastEl.classList.remove('on');},2600);}
-function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
-function view(){var h=location.hash.replace('#','');return VIEWS.indexOf(h)>=0?h:'courts';}
-function names(ids){return ids.map(nm).join(', ');}
+function free(){return st.courts.filter(function(c){return !c.game;}).length;}
+/* minutes until group number g (1-based) gets a court, from a rough 12 minute game */
+function eta(g){var c=st.courts.length||1,w=Math.ceil(Math.max(0,g-free())/c);return w*12;}
+function groups(){var size=st.settings.size||4,out=[];for(var i=0;i<st.queue.length;i+=size)out.push(st.queue.slice(i,i+size));return out;}
+function head(){return '<div class="bar"><div class="mark">'+LOGO+'<div>brickstack<small>The Brick Club</small></div></div>'+(req&&P(req.playerId)?'<div class="avatar">'+esc(ini(req.name))+'</div>':'')+'</div>';}
 
-/* ---------- session logic ---------- */
-function addPlayers(text){
-  var list=text.split(/[,\n]/).map(function(s){return s.trim().slice(0,30);}).filter(Boolean), added=0, dup=0;
-  list.forEach(function(n){
-    var exists=S.players.some(function(p){return p.name.toLowerCase()===n.toLowerCase();});
-    if(exists){dup++;return;}
-    var id=S.nextId++;
-    S.players.push({id:id,name:n,status:'queue',games:0,wins:0,since:Date.now(),run:0});
-    S.queue.push(id);added++;
-  });
-  if(added)toast(plural(added,'player')+' added to the queue'+(dup?', '+dup+' already here':''));
-  else if(dup)toast('That name is already in this session');
-  autoFill();
+function summary(){
+  var open=st&&st.sessionOpen, size=st?st.settings.size||4:4, q=st?st.queue.length:0;
+  var wait=st?eta(Math.ceil((q+1)/size)):0;
+  return '<div class="dark"><div class="row"><span class="tag'+(open?'':' off')+'">'+(open?'LIVE NOW':'CLOSED')+'</span></div><h2>Open play · The Brick Club</h2><div class="tiles"><div><b>'+(st?st.courts.length:0)+'</b><span>courts</span></div><div><b>'+q+'</b><span>in queue</span></div><div><b>'+(open&&wait?'~'+wait+'m':open?'Now':'-')+'</b><span>wait</span></div></div></div>';
 }
-function toQueue(ids,front){
-  ids.forEach(function(id){var p=P(id);if(p){p.status='queue';p.since=Date.now();p.run=0;}});
-  if(front)S.queue=ids.concat(S.queue);else S.queue=S.queue.concat(ids);
+function seg(key,opts,cls){return '<div class="seg">'+opts.map(function(o){return '<button type="button" class="'+cls+'" data-set="'+key+'" data-v="'+o+'" aria-pressed="'+(form[key]===o)+'">'+o+'</button>';}).join('')+'</div>';}
+function joinCard(note){
+  return '<div class="card"><label class="l" for="nm">Your name</label><input id="nm" class="field" type="text" maxlength="30" autocomplete="name" enterkeyhint="done" placeholder="e.g. Juan Dela Cruz" value="'+esc(form.name)+'"><div class="err" role="alert">'+esc(err)+'</div>'+
+    '<label class="l">Your skill level <span style="font-weight:400;color:var(--muted)">(rate yourself)</span></label>'+seg('skill',['Beginner','Novice','Intermediate','Advanced','Expert'],'s')+
+    '<label class="l">Joining as</label>'+seg('party',['Solo','Pair','Group of 4'],'p')+
+    '<button class="btn" data-go="join"'+(busy?' disabled':'')+'>Ask to join →</button></div><p class="foot">'+(note||'The organizer approves you before you’re added to the queue.')+'</p>';
 }
-function fillCourt(c){
-  var size=S.settings.size, need=size-c.hold.length;
-  if(c.game||need<0||S.queue.length<need)return false;
-  var take=S.queue.splice(0,need), a=[], b=[], half=size/2;
-  if(c.hold.length){
-    c.hold.forEach(function(id,i){(i%2?b:a).push(id);});
-    take.forEach(function(id){(a.length<half?a:b).push(id);});
-  }else{
-    if(S.settings.partners==='shuffle')shuffle(take);
-    a=take.slice(0,half);b=take.slice(half);
+function viewHome(){
+  var h=head();
+  if(!st||!st.sessionOpen){
+    return h+'<h1 class="big">Open play</h1><p class="sub">Nothing is running right now. Check back when the session opens.</p>'+summary();
   }
-  a.concat(b).forEach(function(id){P(id).status='court';});
-  c.game={a:a,b:b,start:Date.now()};c.hold=[];
-  return true;
-}
-function autoFill(){if(S.settings.auto)S.courts.forEach(function(c){if(!c.game)fillCourt(c);});}
-function finish(c,winner,sa,sb){
-  var g=c.game, win=g[winner], lose=g[winner==='a'?'b':'a'];
-  g.a.concat(g.b).forEach(function(id){P(id).games++;});
-  win.forEach(function(id){P(id).wins++;});
-  S.history.unshift({court:c.id,a:g.a.map(nm),b:g.b.map(nm),sa:sa,sb:sb,winner:winner,at:Date.now()});
-  if(S.history.length>200)S.history.length=200;
-  c.game=null;
-  if(S.settings.rotation==='stay'){
-    var stay=[],off=[];
-    win.forEach(function(id){var p=P(id);p.run=(p.run||0)+1;(p.run>=2?off:stay).push(id);});
-    stay.forEach(function(id){P(id).status='hold';});
-    c.hold=stay;
-    toQueue(off.concat(lose),false);
-  }else{
-    toQueue(win.concat(lose),false);
+  h+='<h1 class="big">Open play tonight</h1><p class="sub">Ask to join and we’ll call you when a court opens.</p>'+summary();
+  if(req&&req.status==='pending'){
+    return h+'<div class="card"><h2>Request sent</h2><p class="sub" style="margin-bottom:14px">Hang tight, '+esc(first(req.name))+'. The organizer is checking you in. This page updates by itself once you’re approved.</p><button class="btn out" data-go="leave">Cancel request</button></div>';
   }
-  autoFill();
+  if(req&&req.status==='declined')return h+'<div class="card"><h2>Not added this time</h2><p class="sub" style="margin-bottom:0">The organizer couldn’t add you. Find them at the courts, or ask again below.</p></div>'+joinCard();
+  if(req&&req.status==='removed')return h+'<div class="card"><h2>You were removed from the queue</h2><p class="sub" style="margin-bottom:0">Ask again below, or find the organizer.</p></div>'+joinCard();
+  return h+joinCard(req&&req.status==='left'?'You left the queue. You can ask to join again.':'');
 }
-function cancelGame(c){var g=c.game;c.game=null;toQueue(g.a.concat(g.b),true);}
-function releaseHold(c){var h=c.hold;c.hold=[];toQueue(h,true);}
-
-/* ---------- views ---------- */
-function courtCard(c){
-  var size=S.settings.size, h;
-  if(c.game){
-    h='<article class="court"><div class="court-head"><h3>Court '+c.id+'</h3><span class="pill">In play</span><span class="clock" data-clock="'+c.game.start+'">'+clock(c.game.start)+'</span></div>';
-    h+='<span class="team">'+esc(c.game.a.map(nm).join(' · '))+'</span><div class="vs">VS</div><span class="team b">'+esc(c.game.b.map(nm).join(' · '))+'</span>';
-    h+='<div class="court-actions"><button class="btn dark" data-act="result" data-id="'+c.id+'">End game</button></div>';
-  }else if(c.hold.length){
-    var need=size-c.hold.length, short=need-S.queue.length;
-    h='<article class="court open"><div class="court-head"><h3>Court '+c.id+'</h3><span class="pill hold">Winners staying</span></div>';
-    h+='<p>'+esc(c.hold.map(nm).join(' · '))+'</p><p class="note" style="margin-top:0">Needs '+need+' more.</p>';
-    h+='<div class="court-actions"><button class="btn primary" data-act="fill" data-id="'+c.id+'"'+(short>0?' disabled':'')+'>Start game</button><button class="btn quiet" data-act="release" data-id="'+c.id+'">Clear</button></div>';
-    if(short>0)h+='<p class="note">Waiting for '+plural(short,'more player')+' in the queue.</p>';
-  }else{
-    var miss=size-S.queue.length;
-    h='<article class="court open"><div class="court-head"><h3>Court '+c.id+'</h3><span class="pill open">Open</span></div>';
-    h+=miss>0?'<p>Waiting for '+plural(miss,'more player')+' in the queue.</p>':'<p>Ready for the next group: '+esc(names(S.queue.slice(0,size)))+'</p>';
-    h+='<div class="court-actions"><button class="btn primary" data-act="fill" data-id="'+c.id+'"'+(miss>0?' disabled':'')+'>Start game</button></div>';
+function where(p){
+  for(var i=0;i<st.courts.length;i++){var c=st.courts[i];if(c.game&&(c.game.a.indexOf(p.id)>=0||c.game.b.indexOf(p.id)>=0))return c;if(c.hold.indexOf(p.id)>=0)return c;}
+  return null;
+}
+function viewQueue(p){
+  var h=head();
+  if(p.status==='break')return h+'<div class="card"><h2>You’re on a break</h2><p class="sub" style="margin:0">Tell the organizer when you’re ready and they’ll put you back in line.</p></div>';
+  if(p.status==='court'||p.status==='hold'){
+    var c=where(p), g=c&&c.game, mine=g?(g.a.indexOf(p.id)>=0?g.a:g.b):[], opp=g?(g.a.indexOf(p.id)>=0?g.b:g.a):[];
+    return h+'<div class="spot"><small>YOU’RE ON</small><div class="num"><b>'+(c?c.id:'')+'</b><div><strong>Court '+(c?c.id:'')+'</strong>Have a great game</div></div>'+(g?'<div class="chips"><span class="you">'+esc(mine.map(function(i){return first(nm(i));}).join(' · '))+'</span><span>'+esc(opp.map(function(i){return first(nm(i));}).join(' · '))+'</span></div>':'')+'</div>';
   }
-  return h+'</article>';
-}
-function upNext(){
-  var size=S.settings.size, h='<section class="up" aria-label="Up next"><div class="sec-head"><h2>Up next</h2><span>'+plural(S.queue.length,'player')+' · '+plural(Math.ceil(S.queue.length/size),'group')+'</span></div>';
-  if(!S.queue.length)h+='<p class="note" style="margin:0 0 12px">The queue is empty. Players come back here when their game ends.</p>';
-  var open=S.courts.filter(function(c){return !c.game;})[0];
-  for(var i=0;i*size<S.queue.length;i++){
-    var g=S.queue.slice(i*size,i*size+size), full=g.length===size, wait=mins(P(g[0]).since);
-    h+='<div class="group"><span class="n">'+(i+1)+'</span><div class="who"><b>'+esc(names(g))+(full?'':' + '+(size-g.length)+' open')+'</b><small>Waiting <span data-since="'+P(g[0]).since+'">'+ago(P(g[0]).since)+'</span></small></div>';
-    if(i===0&&full&&open)h+='<button class="btn dark small" data-act="fill" data-id="'+open.id+'">Send</button>';
+  var gs=groups(), pos=st.queue.indexOf(p.id), gi=Math.floor(pos/(st.settings.size||4)), mates=gs[gi]||[p.id], size=st.settings.size||4;
+  var openCourt=st.courts.filter(function(c){return !c.game;})[0];
+  var wait=eta(gi+1);
+  var chips='';
+  for(var i=Math.max(0,gi-2);i<gi;i++)chips+='<span>Group '+(i+1)+'</span>';
+  chips+='<span class="you">You</span>';
+  h+='<div class="spot"><small>YOUR SPOT</small><div class="num"><b>'+(gi+1)+'</b><div><strong>in line</strong>'+(wait?'Next court in ~'+wait+' min':'You’re up next')+'</div></div><div class="chips">'+chips+'</div></div>';
+  h+='<div class="card"><div class="head"><h2 style="margin:0">Your group</h2><span>'+(size===2?'Singles':'Doubles')+' · '+esc(p.skill||'Open')+'</span></div><div class="people">';
+  var cls=['','brick','lime'];
+  mates.forEach(function(id,i){var me=id===p.id;h+='<div><div class="avatar '+(me?'':cls[(i%2)+1])+'" style="'+(me?'':'')+'">'+esc(ini(nm(id)))+'</div>'+(me?'You':esc(first(nm(id))))+'</div>';});
+  for(var k=mates.length;k<size;k++)h+='<div><div class="avatar open">+</div>Open</div>';
+  h+='</div></div>';
+  if(gi>0){
+    h+='<div class="card"><h2>Ahead of you</h2>';
+    for(var j=Math.max(0,gi-3);j<gi;j++){
+      var tag=j===0?(openCourt?'<span class="pill">Court '+openCourt.id+'</span>':'<span class="pill line">Next up</span>'):'';
+      h+='<div class="ahead"><span class="n">'+(j+1)+'</span><span class="w">'+esc(gs[j].map(function(i){return first(nm(i));}).join(', '))+'</span>'+tag+'</div>';
+    }
     h+='</div>';
   }
-  var breaks=S.players.filter(function(p){return p.status==='break';});
-  if(breaks.length)h+='<p class="note">On a break: '+esc(breaks.map(function(p){return p.name;}).join(', '))+'. Bring them back from Players.</p>';
-  h+='<div class="add-row"><label for="add-in">Add walk-in player</label><div class="add"><input id="add-in" class="field" type="text" autocomplete="off" enterkeyhint="done" placeholder="Player name"><button class="btn primary" data-act="add">Add</button></div></div></section>';
-  return h;
+  return h+'<button class="btn out" data-go="leave">Leave the queue</button>';
 }
 function viewCourts(){
-  if(!S.players.length){
-    return '<div class="empty"><h1>Nobody’s in the queue yet</h1><p>Add the players who’ve checked in. They join the back of the line and you send the next group on whenever a court opens.</p><div class="row"><a class="btn primary" href="#players">Add players</a><button class="btn" data-act="sample">Try it with 10 sample players</button></div></div>';
-  }
-  var inUse=S.courts.filter(function(c){return c.game;}).length;
-  var waits=S.queue.map(function(id){return mins(P(id).since);}), avg=waits.length?Math.round(waits.reduce(function(a,b){return a+b;},0)/waits.length):0;
-  var h='<div class="page-head"><div><h1>Live board</h1><p>'+plural(S.queue.length,'player')+' waiting</p></div><span class="live">Live · '+inUse+' of '+S.courts.length+' in play</span></div>';
-  h+='<div class="stats"><div class="stat"><small>Courts in use</small><b>'+inUse+' / '+S.courts.length+'</b></div><div class="stat"><small>In queue</small><b>'+S.queue.length+'</b></div><div class="stat"><small>Average wait</small><b>'+avg+' min</b></div><div class="stat"><small>Games played</small><b>'+S.history.length+'</b></div></div>';
-  h+='<div class="board"><section aria-label="Courts"><div class="sec-head"><h2>Courts</h2>'+(S.settings.auto?'<span>Auto-assign: On</span>':'')+'</div><div class="courts">'+S.courts.map(courtCard).join('')+'</div></section>'+upNext()+'</div>';
+  var h=head()+'<div class="head"><h1 class="big" style="margin:0">Courts</h1><span class="pill" style="background:var(--surface)">Live · '+st.courts.filter(function(c){return c.game;}).length+' of '+st.courts.length+' in play</span></div>';
+  var gs=groups(), me=req&&P(req.playerId), mc=me?where(me):null;
+  st.courts.forEach(function(c){
+    if(c.game){
+      h+='<div class="court'+(mc&&mc.id===c.id?' me':'')+'"><div class="h"><h3>Court '+c.id+'</h3><span class="pill dk">In play</span><b data-clock="'+c.game.start+'">'+clock(c.game.start)+'</b></div><div class="t">'+esc(c.game.a.map(function(i){return first(nm(i));}).join(' · '))+'</div><div class="t b">'+esc(c.game.b.map(function(i){return first(nm(i));}).join(' · '))+'</div></div>';
+    }else{
+      h+='<div class="court o"><div class="h"><h3>Court '+c.id+'</h3><span class="pill open">Open</span></div><div class="t">'+(gs[0]&&gs[0].length>=(st.settings.size||4)?'Group 1 is heading over: '+esc(gs[0].map(function(i){return first(nm(i));}).join(', ')):'Waiting for the next group.')+'</div></div>';
+    }
+  });
   return h;
-}
-function statusText(p){
-  if(p.status==='court'||p.status==='hold'){var c=S.courts.filter(function(c){return (c.game&&c.game.a.concat(c.game.b).indexOf(p.id)>=0)||c.hold.indexOf(p.id)>=0;})[0];return 'On Court '+(c?c.id:'');}
-  if(p.status==='break')return 'On a break';
-  return 'Number '+(S.queue.indexOf(p.id)+1)+' in the queue';
-}
-function viewPlayers(){
-  var h='<div class="page-head"><div><h1>Players</h1><p>Check people in. They join the back of the queue.</p></div></div>';
-  h+='<div class="panel"><h2>Add players</h2><div class="add"><input id="add-in" class="field" type="text" autocomplete="off" enterkeyhint="done" aria-label="Player names" placeholder="Name, or several separated by commas"><button class="btn primary" data-act="add">Add to queue</button></div></div>';
-  h+='<div class="panel"><h2>'+plural(S.players.length,'player')+' in this session</h2>';
-  if(!S.players.length)h+='<p class="note" style="margin:0">Nobody has checked in yet. Add the first name above.</p>';
-  else h+='<ul class="roster">'+S.players.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).map(function(p){
-    var busy=p.status==='court'||p.status==='hold';
-    return '<li><div class="who"><b>'+esc(p.name)+'</b><small>'+statusText(p)+'</small></div>'+
-      (p.status==='break'?'<button class="btn small" data-act="rejoin" data-id="'+p.id+'">Rejoin queue</button>':'<button class="btn quiet small" data-act="break" data-id="'+p.id+'"'+(busy||p.status!=='queue'?' disabled':'')+'>Break</button>')+
-      '<button class="btn quiet small warn" data-act="remove" data-id="'+p.id+'"'+(busy?' disabled':'')+'>Remove</button></li>';
-  }).join('')+'</ul>';
-  return h+'</div>';
-}
-function viewStandings(){
-  var ps=S.players.filter(function(p){return p.games>0;}).sort(function(a,b){return b.wins-a.wins||(b.wins/b.games-a.wins/a.games)||a.games-b.games||a.name.localeCompare(b.name);});
-  if(!ps.length&&!S.history.length)return '<div class="empty"><h1>No results yet</h1><p>Standings fill in as you end games on the Courts tab.</p><div class="row"><a class="btn primary" href="#courts">Go to courts</a></div></div>';
-  var h='<div class="page-head"><div><h1>Standings</h1></div></div><div class="panel"><div class="scroll"><table><thead><tr><th>#</th><th>Player</th><th>Won</th><th>Played</th><th>Win %</th></tr></thead><tbody>'+
-    ps.map(function(p,i){return '<tr><td>'+(i+1)+'</td><td>'+esc(p.name)+'</td><td>'+p.wins+'</td><td>'+p.games+'</td><td>'+Math.round(100*p.wins/p.games)+'</td></tr>';}).join('')+'</tbody></table></div></div>';
-  h+='<div class="panel"><h2>Recent games</h2><ul class="games">'+S.history.slice(0,30).map(function(g){
-    var w=g.winner==='a'?g.a:g.b, l=g.winner==='a'?g.b:g.a, ws=g.winner==='a'?g.sa:g.sb, ls=g.winner==='a'?g.sb:g.sa;
-    var sc=(ws!=null&&ls!=null)?', '+ws+'–'+ls:'';
-    return '<li><b>'+esc(w.join(' & '))+'</b> beat '+esc(l.join(' & '))+sc+'<br><small>Court '+g.court+'</small></li>';
-  }).join('')+'</ul></div>';
-  return h;
-}
-function seg(key,opts){return '<div class="seg">'+opts.map(function(o){return '<button class="btn" data-act="set" data-key="'+key+'" data-val="'+o[0]+'" aria-pressed="'+(String(S.settings[key])===String(o[0]))+'">'+o[1]+'</button>';}).join('')+'</div>';}
-function viewSetup(){
-  var last=S.courts[S.courts.length-1], canRemove=S.courts.length>1&&!last.game&&!last.hold.length;
-  var h='<div class="page-head"><div><h1>Setup</h1></div></div><div class="panel"><h2>Session setup</h2>';
-  h+='<div class="setting"><h3>Courts</h3><p>'+(S.courts.length>1&&!canRemove?'Court '+last.id+' is in use. Finish its game to remove it.':'How many courts you have for this session.')+'</p><div class="stepper"><button class="btn" data-act="court-less" aria-label="Remove a court"'+(canRemove?'':' disabled')+'>−</button><b>'+S.courts.length+'</b><button class="btn" data-act="court-more" aria-label="Add a court"'+(S.courts.length>=12?' disabled':'')+'>+</button></div></div>';
-  h+='<div class="setting"><h3>Game type</h3><p>Applies to the next game sent on.</p>'+seg('size',[[4,'Doubles'],[2,'Singles']])+'</div>';
-  h+='<div class="setting"><h3>When a game ends</h3><p>Everyone off sends all players to the back of the queue, winners first. Winners stay keeps them on court, split onto opposite sides, for up to two wins in a row.</p>'+seg('rotation',[['off','Everyone off'],['stay','Winners stay']])+'</div>';
-  h+='<div class="setting"><h3>Partners</h3><p>Queue order pairs players as they stand in line. Shuffle mixes each group of four at random.</p>'+seg('partners',[['order','Queue order'],['shuffle','Shuffle']])+'</div>';
-  h+='<div class="setting"><h3>Fill open courts automatically</h3><p>Sends the next group on as soon as a result is recorded.</p>'+seg('auto',[[false,'Off'],[true,'On']])+'</div>';
-  h+='</div><div class="panel"><h2>Start over</h2><div class="setting"><h3>New session, same players</h3><p>Clears results and puts everyone back in the queue.</p><button class="btn" data-act="restart">Start new session</button></div><div class="setting"><h3>Clear everything</h3><p>Removes all players, results and settings from this device.</p><button class="btn warn" data-act="wipe">Clear everything</button></div></div>';
-  return h;
-}
-function renderFoot(){
-  var t=new Date(S.started);
-  foot.innerHTML='<i>SESSION LIVE</i><b>Open Play</b>Started '+t.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
 }
 function render(){
-  var v=view();
-  document.querySelectorAll('nav a').forEach(function(a){if(a.getAttribute('href')==='#'+v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
-  app.innerHTML=({courts:viewCourts,players:viewPlayers,standings:viewStandings,setup:viewSetup})[v]();
-  renderFoot();
-  armed=null;
-  if(focusAdd){var i=document.getElementById('add-in');if(i)i.focus();focusAdd=false;}
+  if(!loaded.s)return;
+  var me=req&&req.status==='approved'?P(req.playerId):null;
+  if(req&&req.status==='approved'&&!me&&st&&!resetting){resetting=true;Store.leave().then(function(){resetting=false;});}
+  var html;
+  if(!st)html=head()+'<h1 class="big">Open play</h1><p class="sub">Nothing is running right now. Check back when the session opens.</p>';
+  else if(me&&tab==='queue')html=viewQueue(me);
+  else if(tab==='courts'&&st)html=viewCourts();
+  else html=viewHome();
+  var active=document.activeElement&&document.activeElement.id==='nm';
+  app.innerHTML=html;
+  nav.hidden=!st;
+  nav.querySelectorAll('button').forEach(function(b){if(b.dataset.tab===tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  if(active){var i=document.getElementById('nm');if(i){i.focus();i.setSelectionRange(form.name.length,form.name.length);}}
 }
-
-/* ---------- score sheet ---------- */
-function tcard(side,ids,label){
-  var w=dstate.sa!==dstate.sb&&((dstate.sa>dstate.sb)===(side==='a'));
-  return '<div class="tcard'+(w?' win':'')+'"><div class="lab"><small>'+label+'</small>'+(w?'<span class="badge">Winner</span>':'')+'</div><div class="names">'+esc(ids.map(nm).join(' · '))+'</div>'+
-    '<div class="score"><button type="button" class="step" data-step="'+side+'" data-d="-1" aria-label="Subtract a point from '+label+'">−</button><b aria-live="polite">'+dstate['s'+side]+'</b><button type="button" class="step plus" data-step="'+side+'" data-d="1" aria-label="Add a point to '+label+'">+</button></div></div>';
-}
-function drawResult(){
-  var c=C(dstate.court), g=c.game;
-  dlg.innerHTML='<h2 id="dlg-title">How did it go?</h2><p class="sub">Court '+c.id+'. Enter the final score so the next group can get on.</p>'+
-    tcard('a',g.a,'TEAM A')+tcard('b',g.b,'TEAM B')+
-    '<label class="check"><span><b>Winners stay on court</b><small>Next group in the queue challenges them</small></span><input type="checkbox" id="stay"'+(S.settings.rotation==='stay'?' checked':'')+'></label>'+
-    '<p class="err" id="dlg-err" role="alert">'+(dstate.sa===dstate.sb&&(dstate.sa||dstate.sb)?'Scores are tied. Change a score to submit.':'')+'</p>'+
-    '<div class="dlg-actions"><button type="button" class="btn primary" id="dlg-save"'+(dstate.sa===dstate.sb?' disabled':'')+'>Submit score</button><button type="button" class="link" id="dlg-cancel-game">Skip, just free the court</button><button type="button" class="link" id="dlg-back">Back</button></div>';
-}
-function openResult(c){
-  dstate={court:c.id,sa:0,sb:0};
-  drawResult();
-  if(!dlg.open)dlg.showModal();
-}
-dlg.addEventListener('click',function(e){
-  var t=e.target.closest('button');if(!t||!dstate)return;
-  var c=C(dstate.court);
-  if(t.dataset.step){var k='s'+t.dataset.step;dstate[k]=Math.max(0,Math.min(99,dstate[k]+parseInt(t.dataset.d,10)));drawResult();var again=dlg.querySelector('[data-step="'+t.dataset.step+'"][data-d="'+t.dataset.d+'"]');if(again)again.focus();return;}
-  if(t.id==='dlg-back'){dlg.close();return;}
-  if(!c||!c.game){dlg.close();render();return;}
-  if(t.id==='dlg-cancel-game'){cancelGame(c);dlg.close();save();render();toast('Court freed. Players are back at the front of the queue');return;}
-  if(t.id==='dlg-save'){
-    if(dstate.sa===dstate.sb)return;
-    S.settings.rotation=document.getElementById('stay').checked?'stay':'off';
-    finish(c,dstate.sa>dstate.sb?'a':'b',dstate.sa,dstate.sb);dlg.close();save();render();toast('Score saved for Court '+c.id);
-  }
-});
-dlg.addEventListener('close',function(){dstate=null;});
-
-/* ---------- actions ---------- */
-function confirmTwice(btn,act){
-  if(armed===act)return true;
-  armed=act;btn.dataset.label=btn.textContent;btn.textContent='Tap again to confirm';
-  setTimeout(function(){if(armed===act){armed=null;if(btn.isConnected)btn.textContent=btn.dataset.label;}},4000);
-  return false;
-}
+document.addEventListener('input',function(e){if(e.target.id==='nm'){form.name=e.target.value;}});
 document.addEventListener('click',function(e){
-  var b=e.target.closest('[data-act]');if(!b||b.disabled)return;
-  var act=b.dataset.act,id=parseInt(b.dataset.id,10),p,c,i;
-  switch(act){
-    case 'sample':addPlayers(SAMPLE.join(','));break;
-    case 'add':i=document.getElementById('add-in');if(!i.value.trim()){i.focus();return;}addPlayers(i.value);focusAdd=true;break;
-    case 'fill':c=C(id);if(c&&!fillCourt(c))toast('Not enough players in the queue');break;
-    case 'result':c=C(id);if(c&&c.game)openResult(c);return;
-    case 'release':c=C(id);if(c)releaseHold(c);break;
-    case 'break':p=P(id);if(p&&p.status==='queue'){S.queue=S.queue.filter(function(x){return x!==id;});p.status='break';toast(p.name+' is on a break');}break;
-    case 'rejoin':p=P(id);if(p&&p.status==='break'){toQueue([id],false);toast(p.name+' is back in the queue');autoFill();}break;
-    case 'remove':p=P(id);if(!p||p.status==='court'||p.status==='hold')return;if(!confirmTwice(b,'remove'+id))return;
-      S.queue=S.queue.filter(function(x){return x!==id;});S.players=S.players.filter(function(x){return x.id!==id;});toast(p.name+' removed');break;
-    case 'set':var k=b.dataset.key,v=b.dataset.val;S.settings[k]=k==='size'?parseInt(v,10):k==='auto'?v==='true':v;autoFill();break;
-    case 'court-more':if(S.courts.length<12){S.courts.push({id:S.courts[S.courts.length-1].id+1,game:null,hold:[]});autoFill();}break;
-    case 'court-less':c=S.courts[S.courts.length-1];if(S.courts.length>1&&!c.game&&!c.hold.length)S.courts.pop();break;
-    case 'restart':if(!confirmTwice(b,'restart'))return;
-      S.courts.forEach(function(c){c.game=null;c.hold=[];});S.history=[];S.queue=[];S.started=Date.now();
-      S.players.forEach(function(p){p.games=0;p.wins=0;p.run=0;p.status='queue';p.since=Date.now();S.queue.push(p.id);});
-      toast('New session started');break;
-    case 'wipe':if(!confirmTwice(b,'wipe'))return;S=fresh();toast('Everything cleared');break;
-    default:return;
+  var t=e.target.closest('[data-tab],[data-set],[data-go]');if(!t)return;
+  if(t.dataset.tab){tab=t.dataset.tab;render();return;}
+  if(t.dataset.set){form[t.dataset.set]=t.dataset.v;render();return;}
+  if(t.dataset.go==='leave'){Store.leave();return;}
+  if(t.dataset.go==='join'){
+    var n=form.name.trim();
+    if(!n){err='Enter your name first.';render();return;}
+    err='';busy=true;render();
+    Store.submit({name:n.slice(0,30),skill:form.skill,party:form.party}).then(function(){busy=false;},function(){busy=false;err='Could not send your request. Check your connection and try again.';render();});
   }
-  save();render();
 });
-document.addEventListener('keydown',function(e){
-  if(e.key==='Enter'&&e.target.id==='add-in'&&e.target.value.trim()){addPlayers(e.target.value);focusAdd=true;save();render();}
-});
-window.addEventListener('hashchange',render);
-setInterval(function(){
-  document.querySelectorAll('[data-clock]').forEach(function(el){el.textContent=clock(+el.dataset.clock);});
-  document.querySelectorAll('[data-since]').forEach(function(el){el.textContent=ago(+el.dataset.since);});
-},1000);
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='nm'){var b=document.querySelector('[data-go="join"]');if(b)b.click();}});
+Store.watchState(function(s){st=s;loaded.s=true;render();});
+Store.watchMine(function(r){req=r;render();});
 render();
+setInterval(function(){document.querySelectorAll('[data-clock]').forEach(function(el){el.textContent=clock(+el.dataset.clock);});},1000);
 })();
 </script>
 </body>

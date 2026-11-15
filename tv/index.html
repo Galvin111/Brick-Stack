@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>brickstack: TV board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#25201D;--card:#362F2B;--cream:#F3EADB;--muted:#CFC4B6;--brick:#A93F27;--lime:#D4E64A;--font:"Outfit","Avenir Next",system-ui,sans-serif}
+*{box-sizing:border-box}
+html{font-size:clamp(14px,1.45vw,26px)}
+body{margin:0;background:var(--bg);color:var(--cream);font-family:var(--font);min-height:100vh;padding:2.2rem 2.6rem;cursor:none}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+.mark{display:flex;align-items:center;gap:1rem;font-weight:800;font-size:2.1rem;letter-spacing:-.03em;line-height:1}
+.mark svg{width:3.4rem;height:3.4rem}
+.mark small{display:block;color:var(--lime);font-size:.75rem;letter-spacing:.25em;font-weight:500;margin-top:.35rem}
+#time{font-size:3.2rem;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:1.9fr 1fr;gap:2.2rem}
+h2{font-size:.95rem;letter-spacing:.22em;color:var(--lime);margin:0 0 .9rem;font-weight:800}
+.courts{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:1rem}
+.c{background:var(--card);border-radius:1.2rem;padding:1.1rem 1.3rem;min-height:11rem}
+.c .h{display:flex;justify-content:space-between;align-items:center;font-weight:800;letter-spacing:.12em;font-size:.95rem;margin-bottom:.9rem}
+.c .h span{font-weight:600;letter-spacing:0;color:var(--muted);font-variant-numeric:tabular-nums;font-size:1.05rem}
+.c .t{font-size:1.5rem;padding:.2rem 0;font-weight:500}
+.c .t.b{color:var(--muted)}
+.c.open{background:var(--brick)}
+.c.open .big{font-size:1.9rem;font-weight:800;line-height:1.1;margin-bottom:.8rem}
+.c.idle{background:transparent;border:2px dashed #5a4f48;color:var(--muted)}
+.n{display:flex;align-items:center;gap:1.3rem;background:var(--card);border-radius:1.2rem;padding:1rem 1.4rem;margin-bottom:.8rem;font-size:1.45rem}
+.n b{font-size:2.4rem;color:var(--lime);font-weight:800;width:1.2rem}
+.scan{display:flex;align-items:center;gap:1.4rem;background:var(--cream);color:var(--bg);border-radius:1.2rem;padding:1.1rem;margin-top:1.4rem}
+.scan .q{width:8.5rem;height:8.5rem;flex:none;background:#fff;border-radius:.6rem;padding:.4rem}
+.scan .q svg{width:100%;height:100%;display:block}
+.scan b{display:block;font-size:1.7rem;line-height:1.1;letter-spacing:-.02em}
+.scan small{display:block;margin-top:.5rem;font-size:.9rem;word-break:break-all;color:#6B5F57}
+.closed{text-align:center;margin-top:5rem;font-size:2.4rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="mark"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="5" width="26" height="7" rx="3.5" fill="#A93F27"/><rect x="1" y="14" width="26" height="7" rx="3.5" fill="#F3EADB"/><rect x="1" y="23" width="26" height="7" rx="3.5" fill="#A93F27"/><circle cx="28.5" cy="11" r="4" fill="#D4E64A"/></svg><div>brick club<small>OPEN PLAY</small></div></div>
+  <div id="time"></div>
+</div>
+<div id="board"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="../firebase-config.js"></script>
+<script src="../store.js"></script>
+<script>
+(function(){
+var board=document.getElementById('board'), st=null;
+var joinUrl=new URL('../',location.href).href;
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function nm(id){var p=st.players.filter(function(p){return p.id===id;})[0];return p?p.name.split(/\s+/)[0]:'?';}
+function clock(t){var s=Math.max(0,Math.floor((Date.now()-t)/1000)),m=Math.floor(s/60);s%=60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
+function qr(){try{var q=qrcode(0,'M');q.addData(joinUrl);q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true});}catch(e){return '';}}
+function render(){
+  var h;
+  if(!st||!st.sessionOpen){board.innerHTML='<div class="closed">Open play isn’t running right now.</div>';return;}
+  var size=st.settings.size||4, groups=[];
+  for(var i=0;i<st.queue.length;i+=size)groups.push(st.queue.slice(i,i+size));
+  var open=st.courts.filter(function(c){return !c.game;});
+  var courts=st.courts.map(function(c){
+    if(c.game)return '<div class="c"><div class="h">COURT '+c.id+'<span data-clock="'+c.game.start+'">'+clock(c.game.start)+'</span></div><div class="t">'+esc(c.game.a.map(nm).join(' · '))+'</div><div class="t b">'+esc(c.game.b.map(nm).join(' · '))+'</div></div>';
+    if(c===open[0]&&groups[0]&&groups[0].length>=size)return '<div class="c open"><div class="h">COURT '+c.id+'</div><div class="big">Group 1, head over now</div><div>'+esc(groups[0].map(nm).join(', '))+'</div></div>';
+    return '<div class="c idle"><div class="h">COURT '+c.id+'</div><div class="t">Open</div></div>';
+  }).join('');
+  var next=groups.slice(0,5).map(function(g,i){return '<div class="n"><b>'+(i+1)+'</b><span>'+esc(g.map(nm).join(', '))+(g.length<size?' + '+(size-g.length):'')+'</span></div>';}).join('')||'<div class="n" style="color:var(--muted)">Nobody waiting</div>';
+  board.innerHTML='<div class="grid"><div><h2>NOW PLAYING</h2><div class="courts">'+courts+'</div></div><div><h2>UP NEXT</h2>'+next+'<div class="scan"><div class="q">'+qr()+'</div><div><b>Scan to join the queue</b><small>'+esc(joinUrl.replace(/^https?:\/\//,''))+'</small></div></div></div></div>';
+}
+function tick(){
+  document.getElementById('time').textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  document.querySelectorAll('[data-clock]').forEach(function(el){el.textContent=clock(+el.dataset.clock);});
+}
+Store.watchState(function(s){st=s;render();});
+render();tick();setInterval(tick,1000);
+})();
+</script>
+</body>
+</html>
