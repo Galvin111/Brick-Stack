@@ -37,6 +37,10 @@ service cloud.firestore {
               (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
                 && request.resource.data.status == 'left'
                 && resource.data.status in ['pending', 'approved'])
+              // take a break / come back: only the want field, only once approved
+              || (resource.data.status == 'approved'
+                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['want'])
+                && request.resource.data.want in ['break', 'play'])
               // ask again after leaving, being declined or being removed
               || (resource.data.status in ['declined', 'left', 'removed'] && validRequest())
             ));

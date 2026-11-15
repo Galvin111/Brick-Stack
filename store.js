@@ -38,6 +38,10 @@ var Store={
     if(!live){var r=lget(LS_REQ,{}),m=r[luid()];if(m){m.status='left';lset(LS_REQ,r);}return Promise.resolve();}
     return anon().then(function(u){return db.doc('requests/'+u.uid).update({status:'left'});});
   },
+  setWant:function(w){
+    if(!live){var r=lget(LS_REQ,{}),m=r[luid()];if(m){m.want=w;lset(LS_REQ,r);}return Promise.resolve();}
+    return anon().then(function(u){return db.doc('requests/'+u.uid).update({want:w});});
+  },
   /* organizer */
   adminAuth:function(cb){
     if(!live){cb({email:'local demo'});return;}

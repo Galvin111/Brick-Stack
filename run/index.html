@@ -73,6 +73,7 @@ main{padding:12px 20px calc(var(--nav-h) + 40px + env(safe-area-inset-bottom,0px
 .live::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--brick)}
 
 .head-r{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rate{min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fff;padding:0 10px;font-size:.95rem}
 .cstep{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:14px;padding:4px}
 .cstep span{min-width:5.2rem;text-align:center;font-weight:600}
 .cstep b{font-size:1.15rem}
@@ -220,11 +221,11 @@ dialog .sub{color:var(--muted);margin:0 0 16px}
 var KEY='nextup-session-v1';
 var VIEWS=['courts','players','standings','setup'];
 var SAMPLE=['Maya','Dario','Priya','Tomás','Lena','Kofi','Jun','Farah','Beck','Noor'];
-function fresh(){return{players:[],queue:[],courts:[{id:1,game:null,hold:[]},{id:2,game:null,hold:[]}],history:[],settings:{size:4,rotation:'off',partners:'shuffle',auto:false},nextId:1,started:Date.now(),sessionOpen:false};}
-function norm(s){if(s&&Array.isArray(s.players)&&Array.isArray(s.courts)&&s.settings){s.queue=s.queue||[];s.history=s.history||[];s.courts.forEach(function(c){c.hold=c.hold||[];c.game=c.game||null;});if(!s.started)s.started=Date.now();return s;}return fresh();}
-var after=[];
+function fresh(){return{players:[],queue:[],courts:[{id:1,game:null,hold:[]},{id:2,game:null,hold:[]}],history:[],settings:{size:4,rotation:'off',mode:'social',auto:false},nextId:1,started:Date.now(),sessionOpen:false};}
+function norm(s){if(s&&Array.isArray(s.players)&&Array.isArray(s.courts)&&s.settings){s.queue=s.queue||[];s.history=s.history||[];s.courts.forEach(function(c){c.hold=c.hold||[];c.game=c.game||null;});if(!s.started)s.started=Date.now();if(!s.settings.mode)s.settings.mode='social';s.met=s.met||{};return s;}return fresh();}
+var after=[], handled={};
 /* phone notices (approved, removed) go out only once the session itself is saved, so a phone never sees "approved" before the queue has the player */
-function save(){var q=after.splice(0);Store.saveState(S).then(function(){q.forEach(function(f){f();});},function(){toast('Could not save. Check your connection.');});}
+function save(){S.preview=previewGroups().map(function(g){return {ids:g};});var q=after.splice(0);Store.saveState(S).then(function(){q.forEach(function(f){f();});},function(){toast('Could not save. Check your connection.');});}
 var S=fresh(), reqs=[], user=null, booted=false, watching=false, app=document.getElementById('app'), dlg=document.getElementById('dlg'), toastEl=document.getElementById('toast'), foot=document.getElementById('side-foot');
 var dstate=null, armed=null, toastT=null, focusAdd=false;
 
@@ -248,7 +249,7 @@ function addPlayers(text){
     var exists=S.players.some(function(p){return p.name.toLowerCase()===n.toLowerCase();});
     if(exists){dup++;return;}
     var id=S.nextId++;
-    S.players.push({id:id,name:n,status:'queue',games:0,wins:0,since:Date.now(),run:0});
+    S.players.push({id:id,name:n,skill:'Intermediate',status:'queue',games:0,wins:0,since:Date.now(),run:0});
     S.queue.push(id);added++;
   });
   if(added)toast(plural(added,'player')+' added to the queue'+(dup?', '+dup+' already here':''));
@@ -259,20 +260,66 @@ function toQueue(ids,front){
   ids.forEach(function(id){var p=P(id);if(p){p.status='queue';p.since=Date.now();p.run=0;}});
   if(front)S.queue=ids.concat(S.queue);else S.queue=S.queue.concat(ids);
 }
+var RATE={Beginner:1,Novice:2,Intermediate:3,Advanced:4,Expert:5}, LEVELS=['Beginner','Novice','Intermediate','Advanced','Expert'], SKIP_CAP=2;
+function lvl(id){var p=P(id);return RATE[p&&p.skill]||3;}
+function mkey(a,b){return a<b?a+'-'+b:b+'-'+a;}
+function metN(a,b,k){var m=S.met&&S.met[mkey(a,b)];return m?(m[k]||0):0;}
+function noteMet(a,b,k){S.met=S.met||{};var key=mkey(a,b),m=S.met[key]||(S.met[key]={p:0,o:0});m[k]++;}
+function combos(arr,n){if(n===0)return [[]];if(arr.length<n)return [];var out=[];for(var i=0;i<=arr.length-n;i++)combos(arr.slice(i+1),n-1).forEach(function(c){out.push([arr[i]].concat(c));});return out;}
+/* who plays next. Fair and Social take the front of the line. Level groups keeps the longest waiter,
+   then picks the closest levels from the next few in line, and never skips anyone more than SKIP_CAP times in a row. */
+function pickIds(q,k,base,commit){
+  if(S.settings.mode!=='level'||q.length<=k)return q.slice(0,k);
+  var win=q.slice(0,Math.min(q.length,Math.max(k*2,8))), forced=[win[0]];
+  win.forEach(function(id,i){if(i>0&&forced.length<k&&(P(id).skips||0)>=SKIP_CAP)forced.push(id);});
+  var rest=win.filter(function(id){return forced.indexOf(id)<0;}), best=null;
+  combos(rest,k-forced.length).forEach(function(c){
+    var r=forced.concat(c).concat(base).map(lvl), spread=Math.max.apply(null,r)-Math.min.apply(null,r);
+    var pos=c.reduce(function(s,id){return s+win.indexOf(id);},0), score=spread*100+pos;
+    if(!best||score<best.score)best={score:score,ids:forced.concat(c)};
+  });
+  var ids=best.ids.sort(function(x,y){return q.indexOf(x)-q.indexOf(y);});
+  if(commit){
+    var top=Math.max.apply(null,ids.map(function(id){return q.indexOf(id);}));
+    q.slice(0,top).forEach(function(id){if(ids.indexOf(id)<0)P(id).skips=(P(id).skips||0)+1;});
+    ids.forEach(function(id){P(id).skips=0;});
+  }
+  return ids;
+}
+/* how four players split into teams */
+function split(ids){
+  if(ids.length!==4)return [ids.slice(0,ids.length/2),ids.slice(ids.length/2)];
+  var opts=[[[0,1],[2,3]],[[0,2],[1,3]],[[0,3],[1,2]]], best=null;
+  opts.forEach(function(o){
+    var A=[ids[o[0][0]],ids[o[0][1]]], B=[ids[o[1][0]],ids[o[1][1]]];
+    var soc=metN(A[0],A[1],'p')*10+metN(B[0],B[1],'p')*10;
+    A.forEach(function(x){B.forEach(function(y){soc+=metN(x,y,'o')*3;});});
+    var diff=Math.abs(lvl(A[0])+lvl(A[1])-lvl(B[0])-lvl(B[1]));
+    var cost=(S.settings.mode==='social'?soc:diff*100+soc)+Math.random()*0.5;
+    if(!best||cost<best.cost)best={cost:cost,a:A,b:B};
+  });
+  return [best.a,best.b];
+}
 function fillCourt(c){
   var size=S.settings.size, need=size-c.hold.length;
   if(c.game||need<0||S.queue.length<need)return false;
-  var take=S.queue.splice(0,need), a=[], b=[], half=size/2;
+  var take=pickIds(S.queue,need,c.hold,true), a=[], b=[], half=size/2;
+  S.queue=S.queue.filter(function(id){return take.indexOf(id)<0;});
   if(c.hold.length){
     c.hold.forEach(function(id,i){(i%2?b:a).push(id);});
     take.forEach(function(id){(a.length<half?a:b).push(id);});
-  }else{
-    if(S.settings.partners==='shuffle')shuffle(take);
-    a=take.slice(0,half);b=take.slice(half);
-  }
+  }else{var t=split(take);a=t[0];b=t[1];}
+  [a,b].forEach(function(side){side.forEach(function(x,i){side.slice(i+1).forEach(function(y){noteMet(x,y,'p');});});});
+  a.forEach(function(x){b.forEach(function(y){noteMet(x,y,'o');});});
   a.concat(b).forEach(function(id){P(id).status='court';});
   c.game={a:a,b:b,start:Date.now()};c.hold=[];
   return true;
+}
+/* the real next groups, in order. Saved with the session so phones and the TV show the same thing. */
+function previewGroups(){
+  var q=S.queue.slice(), size=S.settings.size, out=[];
+  while(q.length){var g=pickIds(q,Math.min(size,q.length),[],false);out.push(g);q=q.filter(function(id){return g.indexOf(id)<0;});}
+  return out;
 }
 function autoFill(){if(S.settings.auto)S.courts.forEach(function(c){if(!c.game)fillCourt(c);});}
 function finish(c,winner,sa,sb){
@@ -309,6 +356,24 @@ function processLeaves(){
     S.players=S.players.filter(function(x){return x.id!==p.id;});
     changed=true;
   });
+  /* players who tapped Take a break or I'm back on their phone. Each request is answered once. */
+  reqs.forEach(function(r){
+    if(r.want!=='break'&&r.want!=='play'){delete handled[r.uid+':break'];delete handled[r.uid+':play'];return;}
+    var key=r.uid+':'+r.want;
+    if(handled[key]||r.status!=='approved'||!r.playerId)return;
+    var p=P(r.playerId);
+    if(!p||p.uid!==r.uid)return;
+    if(r.want==='break'){
+      if(p.status==='queue'){S.queue=S.queue.filter(function(x){return x!==p.id;});p.status='break';}
+      else if(p.status!=='break')return;
+    }else{
+      if(p.status==='break')toQueue([p.id],false);
+      else if(p.status!=='queue')return;
+    }
+    handled[key]=true;changed=true;
+    after.push(function(){Store.patchRequest(r.uid,{want:'ok'});});
+  });
+  if(changed)autoFill();
   return changed;
 }
 
@@ -328,7 +393,7 @@ function courtCard(c){
   }else{
     var miss=size-S.queue.length;
     h='<article class="court open"><div class="court-head"><h3>Court '+c.id+'</h3><span class="pill open">Open</span></div>';
-    h+=miss>0?'<p>Waiting for '+plural(miss,'more player')+' in the queue.</p>':'<p>Ready for the next group: '+esc(names(S.queue.slice(0,size)))+'</p>';
+    h+=miss>0?'<p>Waiting for '+plural(miss,'more player')+' in the queue.</p>':'<p>Ready for the next group: '+esc(names(previewGroups()[0]))+'</p>';
     h+='<div class="court-actions"><button class="btn primary" data-act="fill" data-id="'+c.id+'"'+(miss>0?' disabled':'')+'>Start game</button></div>';
   }
   return h+'</article>';
@@ -346,12 +411,12 @@ function upNext(){
   var size=S.settings.size, h='<section class="up" aria-label="Up next"><div class="sec-head"><h2>Up next</h2><span>'+plural(S.queue.length,'player')+' · '+plural(Math.ceil(S.queue.length/size),'group')+'</span></div>';
   if(!S.queue.length)h+='<p class="note" style="margin:0 0 12px">The queue is empty. Players come back here when their game ends.</p>';
   var open=S.courts.filter(function(c){return !c.game;})[0];
-  for(var i=0;i*size<S.queue.length;i++){
-    var g=S.queue.slice(i*size,i*size+size), full=g.length===size, wait=mins(P(g[0]).since);
-    h+='<div class="group"><span class="n">'+(i+1)+'</span><div class="who"><b>'+esc(names(g))+(full?'':' + '+(size-g.length)+' open')+'</b><small>Waiting <span data-since="'+P(g[0]).since+'">'+ago(P(g[0]).since)+'</span>'+(P(g[0]).skill?' · '+esc(P(g[0]).skill):'')+'</small></div>';
+  previewGroups().forEach(function(g,i){
+    var full=g.length===size, first=P(g[0]);
+    h+='<div class="group"><span class="n">'+(i+1)+'</span><div class="who"><b>'+esc(names(g))+(full?'':' + '+(size-g.length)+' open')+'</b><small>Waiting <span data-since="'+first.since+'">'+ago(first.since)+'</span> · Levels '+g.map(lvl).join(', ')+'</small></div>';
     if(i===0&&full&&open)h+='<button class="btn dark small" data-act="fill" data-id="'+open.id+'">Send</button>';
     h+='</div>';
-  }
+  });
   var breaks=S.players.filter(function(p){return p.status==='break';});
   if(breaks.length)h+='<p class="note">On a break: '+esc(breaks.map(function(p){return p.name;}).join(', '))+'. Bring them back from Players.</p>';
   h+='<div class="add-row"><label for="add-in">Add walk-in player</label><div class="add"><input id="add-in" class="field" type="text" autocomplete="off" enterkeyhint="done" placeholder="Player name"><button class="btn primary" data-act="add">Add</button></div></div></section>';
@@ -386,7 +451,7 @@ function viewPlayers(){
   if(!S.players.length)h+='<p class="note" style="margin:0">Nobody has checked in yet. Add the first name above.</p>';
   else h+='<ul class="roster">'+S.players.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).map(function(p){
     var busy=p.status==='court'||p.status==='hold';
-    return '<li><div class="who"><b>'+esc(p.name)+'</b><small>'+statusText(p)+'</small></div>'+
+    return '<li><div class="who"><b>'+esc(p.name)+'</b><small>'+statusText(p)+'</small></div><select class="rate" data-rate="'+p.id+'" aria-label="Level for '+esc(p.name)+'">'+LEVELS.map(function(l){return '<option'+(l===(p.skill||'Intermediate')?' selected':'')+'>'+l+'</option>';}).join('')+'</select>'+
       (p.status==='break'?'<button class="btn small" data-act="rejoin" data-id="'+p.id+'">Rejoin queue</button>':'<button class="btn quiet small" data-act="break" data-id="'+p.id+'"'+(busy||p.status!=='queue'?' disabled':'')+'>Break</button>')+
       '<button class="btn quiet small warn" data-act="remove" data-id="'+p.id+'"'+(busy?' disabled':'')+'>Remove</button></li>';
   }).join('')+'</ul>';
@@ -411,7 +476,7 @@ function viewSetup(){
   h+='<div class="setting"><h3>Courts</h3><p>'+(S.courts.length>1&&!canRemove?'Court '+last.id+' is in use. Finish its game to remove it.':'How many courts you have for this session.')+'</p><div class="stepper"><button class="btn" data-act="court-less" aria-label="Remove a court"'+(canRemove?'':' disabled')+'>−</button><b>'+S.courts.length+'</b><button class="btn" data-act="court-more" aria-label="Add a court"'+(S.courts.length>=12?' disabled':'')+'>+</button></div></div>';
   h+='<div class="setting"><h3>Game type</h3><p>Applies to the next game sent on.</p>'+seg('size',[[4,'Doubles'],[2,'Singles']])+'</div>';
   h+='<div class="setting"><h3>When a game ends</h3><p>Everyone off sends all players to the back of the queue, winners first. Winners stay keeps them on court, split onto opposite sides, for up to two wins in a row.</p>'+seg('rotation',[['off','Everyone off'],['stay','Winners stay']])+'</div>';
-  h+='<div class="setting"><h3>Partners</h3><p>Queue order pairs players as they stand in line. Shuffle mixes each group of four at random.</p>'+seg('partners',[['order','Queue order'],['shuffle','Shuffle']])+'</div>';
+  h+='<div class="setting"><h3>Queue mode</h3><p>'+({social:'Next four in line play. Teams are shuffled so people partner and face someone new.',balanced:'Next four in line play. Teams are split by level so both sides are about even.',level:'Picks the closest levels from the next 8 waiting and balances teams. Nobody is skipped more than twice in a row.'})[S.settings.mode]+'</p>'+seg('mode',[['social','Social mix'],['balanced','Balanced teams'],['level','Level groups']])+'</div>';
   h+='<div class="setting"><h3>Fill open courts automatically</h3><p>Sends the next group on as soon as a result is recorded.</p>'+seg('auto',[[false,'Off'],[true,'On']])+'</div>';
   h+='</div><div class="panel"><h2>Player QR code</h2><div class="qrbox"><div class="q">'+qrSvg()+'</div><div><p>'+esc(joinUrl())+'</p><button class="btn" data-act="print-qr">Print QR sign</button></div></div><p class="hint" style="margin:12px 0 0;color:var(--muted)">Players scan this to ask to join. You approve each request on the Live board.</p></div><div class="panel"><h2>Start over</h2><div class="setting"><h3>New session, same players</h3><p>Clears results and puts everyone back in the queue.</p><button class="btn" data-act="restart">Start new session</button></div><div class="setting"><h3>Clear everything</h3><p>Removes all players, results and settings from this device.</p><button class="btn warn" data-act="wipe">Clear everything</button></div></div>';
   return h;
@@ -490,7 +555,7 @@ document.addEventListener('click',function(e){
       var nid=S.nextId++;S.players.push({id:nid,name:r.name,uid:r.uid,skill:r.skill,party:r.party,status:'queue',games:0,wins:0,since:Date.now(),run:0});S.queue.push(nid);
       after.push(function(){Store.patchRequest(r.uid,{status:'approved',playerId:nid});});toast(r.name+' approved and added to the queue');autoFill();break;}
     case 'decline':{var d=reqFor(b.dataset.uid);if(!d)return;Store.patchRequest(d.uid,{status:'declined'});toast(d.name+' declined');return;}
-    case 'sample':addPlayers(SAMPLE.join(','));break;
+    case 'sample':addPlayers(SAMPLE.join(','));S.players.forEach(function(p,i){p.skill=LEVELS[(i*2)%5];});break;
     case 'add':i=document.getElementById('add-in');if(!i.value.trim()){i.focus();return;}addPlayers(i.value);focusAdd=true;break;
     case 'fill':c=C(id);if(c&&!fillCourt(c))toast('Not enough players in the queue');break;
     case 'result':c=C(id);if(c&&c.game)openResult(c);return;
@@ -503,14 +568,15 @@ document.addEventListener('click',function(e){
     case 'court-more':if(S.courts.length<12){S.courts.push({id:S.courts[S.courts.length-1].id+1,game:null,hold:[]});autoFill();}break;
     case 'court-less':c=S.courts[S.courts.length-1];if(S.courts.length>1&&!c.game&&!c.hold.length)S.courts.pop();break;
     case 'restart':if(!confirmTwice(b,'restart'))return;
-      S.courts.forEach(function(c){c.game=null;c.hold=[];});S.history=[];S.queue=[];S.started=Date.now();
-      S.players.forEach(function(p){p.games=0;p.wins=0;p.run=0;p.status='queue';p.since=Date.now();S.queue.push(p.id);});
+      S.courts.forEach(function(c){c.game=null;c.hold=[];});S.history=[];S.queue=[];S.met={};S.started=Date.now();
+      S.players.forEach(function(p){p.games=0;p.wins=0;p.run=0;p.skips=0;p.status='queue';p.since=Date.now();S.queue.push(p.id);});
       toast('New session started');break;
     case 'wipe':if(!confirmTwice(b,'wipe'))return;S=fresh();toast('Everything cleared');break;
     default:return;
   }
   processLeaves();save();render();
 });
+document.addEventListener('change',function(e){var t=e.target;if(!t.dataset||!t.dataset.rate)return;var p=P(parseInt(t.dataset.rate,10));if(p&&LEVELS.indexOf(t.value)>=0){p.skill=t.value;save();render();toast(p.name+' is now '+t.value);}});
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&e.target.id==='add-in'&&e.target.value.trim()){addPlayers(e.target.value);focusAdd=true;save();render();}
 });
