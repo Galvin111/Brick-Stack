@@ -7,7 +7,7 @@ service cloud.firestore {
       return request.auth != null
         && request.auth.token.firebase.sign_in_provider == 'google.com'
         && request.auth.token.email_verified == true
-        && request.auth.token.email in ['ORGANIZER_EMAIL'];
+        && request.auth.token.email in ['garoudesu21@gmail.com'];
     }
 
     function validRequest() {
