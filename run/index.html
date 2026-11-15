@@ -320,8 +320,6 @@ function fillCourt(c){
     c.hold.forEach(function(id,i){(i%2?b:a).push(id);});
     take.forEach(function(id){(a.length<half?a:b).push(id);});
   }else{var t=split(take);a=t[0];b=t[1];}
-  [a,b].forEach(function(side){side.forEach(function(x,i){side.slice(i+1).forEach(function(y){noteMet(x,y,'p');});});});
-  a.forEach(function(x){b.forEach(function(y){noteMet(x,y,'o');});});
   a.concat(b).forEach(function(id){P(id).status='court';});
   c.game={a:a,b:b,start:Date.now()};c.hold=[];
   return true;
@@ -333,8 +331,19 @@ function previewGroups(){
   return out;
 }
 function autoFill(){if(S.settings.auto)S.courts.forEach(function(c){if(!c.game)fillCourt(c);});}
+function noteGame(a,b){
+  [a,b].forEach(function(side){side.forEach(function(x,i){side.slice(i+1).forEach(function(y){noteMet(x,y,'p');});});});
+  a.forEach(function(x){b.forEach(function(y){noteMet(x,y,'o');});});
+}
+/* players may pick their own partners on court; cycle AB|CD -> AC|DB -> AD|BC */
+function swapTeams(g){
+  if(g.a.length!==2||g.b.length!==2)return;
+  var o=[g.a[1],g.b[0],g.b[1]];
+  g.a=[g.a[0],o[1]];g.b=[o[2],o[0]];
+}
 function finish(c,winner,sa,sb){
   var g=c.game, win=g[winner], lose=g[winner==='a'?'b':'a'];
+  noteGame(g.a,g.b);
   g.a.concat(g.b).forEach(function(id){P(id).games++;});
   win.forEach(function(id){P(id).wins++;});
   S.history.unshift({court:c.id,a:g.a.map(nm),b:g.b.map(nm),sa:sa,sb:sb,winner:winner,at:Date.now()});
@@ -394,7 +403,7 @@ function courtCard(c){
   if(c.game){
     h='<article class="court"><div class="court-head"><h3>Court '+c.id+'</h3><span class="pill">In play</span><span class="clock" data-clock="'+c.game.start+'">'+clock(c.game.start)+'</span></div>';
     h+='<span class="team">'+esc(c.game.a.map(nm).join(' · '))+'</span><div class="vs">VS</div><span class="team b">'+esc(c.game.b.map(nm).join(' · '))+'</span>';
-    h+='<div class="court-actions"><button class="btn dark" data-act="result" data-id="'+c.id+'">End game</button></div>';
+    h+='<div class="court-actions"><button class="btn dark" data-act="result" data-id="'+c.id+'">End game</button>'+(c.game.a.length===2?'<button class="btn quiet" data-act="swap" data-id="'+c.id+'">Swap partners</button>':'')+'</div>';
   }else if(c.hold.length){
     var need=size-c.hold.length, short=need-S.queue.length;
     h='<article class="court open"><div class="court-head"><h3>Court '+c.id+'</h3><span class="pill hold">Winners staying</span></div>';
@@ -525,7 +534,7 @@ function drawResult(){
   var c=C(dstate.court), g=c.game;
   dlg.innerHTML='<h2 id="dlg-title">How did it go?</h2><p class="sub">Court '+c.id+'. Enter the final score so the next group can get on.</p>'+
     tcard('a',g.a,'TEAM A')+tcard('b',g.b,'TEAM B')+
-    '<label class="check"><span><b>Winners stay on court</b><small>Next group in the queue challenges them</small></span><input type="checkbox" id="stay"'+(S.settings.rotation==='stay'?' checked':'')+'></label>'+
+    (g.a.length===2?'<button type="button" class="link" id="dlg-swap">Wrong teams? Swap partners</button>':'')+'<label class="check"><span><b>Winners stay on court</b><small>Next group in the queue challenges them</small></span><input type="checkbox" id="stay"'+(S.settings.rotation==='stay'?' checked':'')+'></label>'+
     '<p class="err" id="dlg-err" role="alert">'+(dstate.sa===dstate.sb&&(dstate.sa||dstate.sb)?'Scores are tied. Change a score to submit.':'')+'</p>'+
     '<div class="dlg-actions"><button type="button" class="btn primary" id="dlg-save"'+(dstate.sa===dstate.sb?' disabled':'')+'>Submit score</button><button type="button" class="link" id="dlg-cancel-game">Skip, just free the court</button><button type="button" class="link" id="dlg-back">Back</button></div>';
 }
@@ -537,6 +546,7 @@ function openResult(c){
 dlg.addEventListener('click',function(e){
   var t=e.target.closest('button');if(!t||!dstate)return;
   var c=C(dstate.court);
+  if(t.id==='dlg-swap'){swapTeams(c.game);save();drawResult();return;}
   if(t.dataset.step){var k='s'+t.dataset.step;dstate[k]=Math.max(0,Math.min(99,dstate[k]+parseInt(t.dataset.d,10)));drawResult();var again=dlg.querySelector('[data-step="'+t.dataset.step+'"][data-d="'+t.dataset.d+'"]');if(again)again.focus();return;}
   if(t.id==='dlg-back'){dlg.close();return;}
   if(!c||!c.game){dlg.close();render();return;}
@@ -570,6 +580,7 @@ document.addEventListener('click',function(e){
     case 'decline':{var d=reqFor(b.dataset.uid);if(!d)return;Store.patchRequest(d.uid,{status:'declined'});toast(d.name+' declined');return;}
     case 'sample':addPlayers(SAMPLE.join(','));S.players.forEach(function(p,i){p.skill=LEVELS[(i*2)%5];});break;
     case 'add':i=document.getElementById('add-in');if(!i.value.trim()){i.focus();return;}addPlayers(i.value);focusAdd=true;break;
+    case 'swap':c=C(id);if(c&&c.game){swapTeams(c.game);toast('Court '+c.id+': '+c.game.a.map(nm).join(' & ')+' vs '+c.game.b.map(nm).join(' & '));}break;
     case 'fill':c=C(id);if(c&&!fillCourt(c))toast('Not enough players in the queue');break;
     case 'result':c=C(id);if(c&&c.game)openResult(c);return;
     case 'release':c=C(id);if(c)releaseHold(c);break;
