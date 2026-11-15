@@ -217,7 +217,7 @@ dialog .sub{color:var(--muted);margin:0 0 16px}
 var KEY='nextup-session-v1';
 var VIEWS=['courts','players','standings','setup'];
 var SAMPLE=['Maya','Dario','Priya','Tomás','Lena','Kofi','Jun','Farah','Beck','Noor'];
-function fresh(){return{players:[],queue:[],courts:[{id:1,game:null,hold:[]},{id:2,game:null,hold:[]}],history:[],settings:{size:4,rotation:'off',partners:'order',auto:false},nextId:1,started:Date.now(),sessionOpen:false};}
+function fresh(){return{players:[],queue:[],courts:[{id:1,game:null,hold:[]},{id:2,game:null,hold:[]}],history:[],settings:{size:4,rotation:'off',partners:'shuffle',auto:false},nextId:1,started:Date.now(),sessionOpen:false};}
 function norm(s){if(s&&Array.isArray(s.players)&&Array.isArray(s.courts)&&s.settings){s.queue=s.queue||[];s.history=s.history||[];s.courts.forEach(function(c){c.hold=c.hold||[];c.game=c.game||null;});if(!s.started)s.started=Date.now();return s;}return fresh();}
 function save(){Store.saveState(S).catch(function(){toast('Could not save. Check your connection.');});}
 var S=fresh(), reqs=[], user=null, booted=false, watching=false, app=document.getElementById('app'), dlg=document.getElementById('dlg'), toastEl=document.getElementById('toast'), foot=document.getElementById('side-foot');
@@ -333,7 +333,7 @@ function pendingPanel(){
   if(!list.length)return '';
   var h='<section class="up pend" aria-label="Waiting for approval"><div class="sec-head"><h2>Waiting for approval</h2><span>'+list.length+'</span></div>';
   list.forEach(function(r){
-    h+='<div class="group"><div class="who"><b>'+esc(r.name)+'</b><small>'+esc(r.skill)+' · '+esc(r.party)+' · asked '+ago(r.at)+' ago</small></div><button class="btn primary small" data-act="approve" data-uid="'+esc(r.uid)+'">Approve</button><button class="btn quiet small" data-act="decline" data-uid="'+esc(r.uid)+'" aria-label="Decline '+esc(r.name)+'">Decline</button></div>';
+    h+='<div class="group"><div class="who"><b>'+esc(r.name)+'</b><small>'+esc(r.skill)+' · asked '+ago(r.at)+' ago</small></div><button class="btn primary small" data-act="approve" data-uid="'+esc(r.uid)+'">Approve</button><button class="btn quiet small" data-act="decline" data-uid="'+esc(r.uid)+'" aria-label="Decline '+esc(r.name)+'">Decline</button></div>';
   });
   return h+'</section>';
 }

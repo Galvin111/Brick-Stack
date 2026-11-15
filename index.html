@@ -115,7 +115,6 @@ function seg(key,opts,cls){return '<div class="seg">'+opts.map(function(o){retur
 function joinCard(note){
   return '<div class="card"><label class="l" for="nm">Your name</label><input id="nm" class="field" type="text" maxlength="30" autocomplete="name" enterkeyhint="done" placeholder="e.g. Juan Dela Cruz" value="'+esc(form.name)+'"><div class="err" role="alert">'+esc(err)+'</div>'+
     '<label class="l">Your skill level <span style="font-weight:400;color:var(--muted)">(rate yourself)</span></label>'+seg('skill',['Beginner','Novice','Intermediate','Advanced','Expert'],'s')+
-    '<label class="l">Joining as</label>'+seg('party',['Solo','Pair','Group of 4'],'p')+
     '<button class="btn" data-go="join"'+(busy?' disabled':'')+'>Ask to join →</button></div><p class="foot">'+(note||'The organizer approves you before you’re added to the queue.')+'</p>';
 }
 function viewHome(){
@@ -201,7 +200,7 @@ document.addEventListener('click',function(e){
     var n=form.name.trim();
     if(!n){err='Enter your name first.';render();return;}
     err='';busy=true;render();
-    Store.submit({name:n.slice(0,30),skill:form.skill,party:form.party}).then(function(){busy=false;},function(){busy=false;err='Could not send your request. Check your connection and try again.';render();});
+    Store.submit({name:n.slice(0,30),skill:form.skill,party:'Solo'}).then(function(){busy=false;},function(){busy=false;err='Could not send your request. Check your connection and try again.';render();});
   }
 });
 document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='nm'){var b=document.querySelector('[data-go="join"]');if(b)b.click();}});
