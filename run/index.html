@@ -73,6 +73,9 @@ main{padding:12px 20px calc(var(--nav-h) + 40px + env(safe-area-inset-bottom,0px
 .live::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--brick)}
 
 .head-r{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cstep{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:14px;padding:4px}
+.cstep span{min-width:5.2rem;text-align:center;font-weight:600}
+.cstep b{font-size:1.15rem}
 .pend{margin-bottom:16px}
 .pend .group .btn{flex:none}
 .qrbox{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
@@ -352,15 +355,19 @@ function upNext(){
   h+='<div class="add-row"><label for="add-in">Add walk-in player</label><div class="add"><input id="add-in" class="field" type="text" autocomplete="off" enterkeyhint="done" placeholder="Player name"><button class="btn primary" data-act="add">Add</button></div></div></section>';
   return h;
 }
+function courtStepper(){
+  var last=S.courts[S.courts.length-1], canRemove=S.courts.length>1&&!last.game&&!last.hold.length;
+  return '<div class="cstep" role="group" aria-label="Number of courts"><button class="btn small quiet" data-act="court-less" aria-label="Remove a court"'+(canRemove?'':' disabled')+'>−</button><span><b>'+S.courts.length+'</b> '+(S.courts.length===1?'court':'courts')+'</span><button class="btn small quiet" data-act="court-more" aria-label="Add a court"'+(S.courts.length>=12?' disabled':'')+'>+</button></div>';
+}
 function joinToggle(){return '<button class="btn small '+(S.sessionOpen?'quiet':'primary')+'" data-act="toggle-join" aria-pressed="'+!!S.sessionOpen+'">'+(S.sessionOpen?'Close joining':'Open joining')+'</button>';}
 function viewCourts(){
   if(!S.players.length&&!pending().length){
-    return '<div class="page-head"><div><h1>Live board</h1><p>'+(S.sessionOpen?'Joining is open. Requests will appear here for you to approve.':'Open joining so players can scan the QR and ask to join.')+'</p></div><div class="head-r">'+joinToggle()+'</div></div>'+
+    return '<div class="page-head"><div><h1>Live board</h1><p>'+(S.sessionOpen?'Joining is open. Requests will appear here for you to approve.':'Open joining so players can scan the QR and ask to join.')+'</p></div><div class="head-r">'+courtStepper()+joinToggle()+'</div></div>'+
       '<div class="empty"><h1>Nobody’s in the queue yet</h1><p>Players who ask to join appear here for approval. You can also add the players who’ve checked in yourself.</p><div class="row"><a class="btn primary" href="#players">Add players</a><button class="btn" data-act="sample">Try it with 10 sample players</button></div></div>';
   }
   var inUse=S.courts.filter(function(c){return c.game;}).length;
   var waits=S.queue.map(function(id){return mins(P(id).since);}), avg=waits.length?Math.round(waits.reduce(function(a,b){return a+b;},0)/waits.length):0;
-  var h='<div class="page-head"><div><h1>Live board</h1><p>'+plural(S.queue.length,'player')+' waiting</p></div><div class="head-r"><span class="live">Live · '+inUse+' of '+S.courts.length+' in play</span>'+joinToggle()+'</div></div>';
+  var h='<div class="page-head"><div><h1>Live board</h1><p>'+plural(S.queue.length,'player')+' waiting</p></div><div class="head-r"><span class="live">Live · '+inUse+' of '+S.courts.length+' in play</span>'+courtStepper()+joinToggle()+'</div></div>';
   h+='<div class="stats"><div class="stat"><small>Courts in use</small><b>'+inUse+' / '+S.courts.length+'</b></div><div class="stat"><small>In queue</small><b>'+S.queue.length+'</b></div><div class="stat"><small>Average wait</small><b>'+avg+' min</b></div><div class="stat"><small>Games played</small><b>'+S.history.length+'</b></div></div>';
   h+='<div class="board"><section aria-label="Courts"><div class="sec-head"><h2>Courts</h2>'+(S.settings.auto?'<span>Auto-assign: On</span>':'')+'</div><div class="courts">'+S.courts.map(courtCard).join('')+'</div></section>'+'<div>'+pendingPanel()+upNext()+'</div></div>';
   return h;
