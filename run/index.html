@@ -429,7 +429,7 @@ function upNext(){
     h+='</div>';
   });
   var breaks=S.players.filter(function(p){return p.status==='break';});
-  if(breaks.length)h+='<p class="note">On a break: '+esc(breaks.map(function(p){return p.name;}).join(', '))+'. Bring them back from Players.</p>';
+  if(breaks.length)h+='<p class="note">Out of the queue: '+esc(breaks.map(function(p){return p.name;}).join(', '))+'. Bring them back from Players.</p>';
   h+='<div class="add-row"><label for="add-in">Add walk-in player</label><div class="add"><input id="add-in" class="field" type="text" autocomplete="off" enterkeyhint="done" placeholder="Player name"><button class="btn primary" data-act="add">Add</button></div></div></section>';
   return h;
 }
@@ -452,7 +452,7 @@ function viewCourts(){
 }
 function statusText(p){
   if(p.status==='court'||p.status==='hold'){var c=S.courts.filter(function(c){return (c.game&&c.game.a.concat(c.game.b).indexOf(p.id)>=0)||c.hold.indexOf(p.id)>=0;})[0];return 'On Court '+(c?c.id:'')+(wantsBreak(p)?' · break after this game':'');}
-  if(p.status==='break')return 'On a break';
+  if(p.status==='break')return 'Out of the queue';
   return 'Number '+(S.queue.indexOf(p.id)+1)+' in the queue';
 }
 function viewPlayers(){
