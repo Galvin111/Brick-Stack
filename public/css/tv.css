@@ -1,0 +1,28 @@
+:root{--bg:#25201D;--card:#362F2B;--cream:#F3EADB;--muted:#CFC4B6;--brick:#A93F27;--lime:#D4E64A;--font:"Outfit","Avenir Next",system-ui,sans-serif}
+*{box-sizing:border-box}
+html{font-size:clamp(14px,1.45vw,26px)}
+body{margin:0;background:var(--bg);color:var(--cream);font-family:var(--font);min-height:100vh;padding:2.2rem 2.6rem;cursor:none}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+.mark{display:flex;align-items:center;gap:1rem;font-weight:800;font-size:2.1rem;letter-spacing:-.03em;line-height:1}
+.mark svg{width:3.4rem;height:3.4rem}
+.mark small{display:block;color:var(--lime);font-size:.75rem;letter-spacing:.25em;font-weight:500;margin-top:.35rem}
+#time{font-size:3.2rem;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:1.9fr 1fr;gap:2.2rem}
+h2{font-size:.95rem;letter-spacing:.22em;color:var(--lime);margin:0 0 .9rem;font-weight:800}
+.courts{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:1rem}
+.c{background:var(--card);border-radius:1.2rem;padding:1.1rem 1.3rem;min-height:11rem}
+.c .h{display:flex;justify-content:space-between;align-items:center;font-weight:800;letter-spacing:.12em;font-size:.95rem;margin-bottom:.9rem}
+.c .h span{font-weight:600;letter-spacing:0;color:var(--muted);font-variant-numeric:tabular-nums;font-size:1.05rem}
+.c .t{font-size:1.5rem;padding:.2rem 0;font-weight:500}
+.c .t.b{color:var(--muted)}
+.c.open{background:var(--brick)}
+.c.open .big{font-size:1.9rem;font-weight:800;line-height:1.1;margin-bottom:.8rem}
+.c.idle{background:transparent;border:2px dashed #5a4f48;color:var(--muted)}
+.n{display:flex;align-items:center;gap:1.3rem;background:var(--card);border-radius:1.2rem;padding:1rem 1.4rem;margin-bottom:.8rem;font-size:1.45rem}
+.n b{font-size:2.4rem;color:var(--lime);font-weight:800;width:1.2rem}
+.scan{display:flex;align-items:center;gap:1.4rem;background:var(--cream);color:var(--bg);border-radius:1.2rem;padding:1.1rem;margin-top:1.4rem}
+.scan .q{width:8.5rem;height:8.5rem;flex:none;background:#fff;border-radius:.6rem;padding:.4rem}
+.scan .q svg{width:100%;height:100%;display:block}
+.scan b{display:block;font-size:1.7rem;line-height:1.1;letter-spacing:-.02em}
+.scan small{display:block;margin-top:.5rem;font-size:.9rem;word-break:break-all;color:#6B5F57}
+.closed{text-align:center;margin-top:5rem;font-size:2.4rem;color:var(--muted)}

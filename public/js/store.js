@@ -4,10 +4,20 @@
    With no Firebase config it falls back to localStorage so every page still works on one device. */
 (function(){
 var cfg=window.BRICK_FIREBASE||{}, live=!!cfg.apiKey;
-var V='10.14.1', base='https://www.gstatic.com/firebasejs/'+V+'/';
+/* Firebase SDK 10.14.1 is self-hosted in js/vendor/ (no third-party script host). */
+var me=(document.currentScript&&document.currentScript.src)||'', base=me.replace(/[^\/]*$/,'')+'vendor/';
 var db,auth,fb;
 function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){rej(new Error('Could not load '+src));};document.head.appendChild(s);});}
-var ready=live?loadScript(base+'firebase-app-compat.js').then(function(){return Promise.all([loadScript(base+'firebase-auth-compat.js'),loadScript(base+'firebase-firestore-compat.js')]);}).then(function(){fb=window.firebase;fb.initializeApp(cfg);auth=fb.auth();db=fb.firestore();}):Promise.resolve();
+var useAppCheck=!!cfg.appCheckSiteKey;
+var ready=live?loadScript(base+'firebase-app-compat.js').then(function(){var libs=[loadScript(base+'firebase-auth-compat.js'),loadScript(base+'firebase-firestore-compat.js')];if(useAppCheck)libs.push(loadScript(base+'firebase-app-check-compat.js'));return Promise.all(libs);}).then(function(){
+  fb=window.firebase;
+  fb.initializeApp({apiKey:cfg.apiKey,authDomain:cfg.authDomain,projectId:cfg.projectId,appId:cfg.appId});
+  /* App Check: proves requests come from this website, not a script. Turned on by setting appCheckSiteKey in firebase-config.js. */
+  if(useAppCheck)fb.appCheck().activate(new fb.appCheck.ReCaptchaEnterpriseProvider(cfg.appCheckSiteKey),true);
+  auth=fb.auth();db=fb.firestore();
+}):Promise.resolve();
+/* request timestamps are set by the server, so they can't be faked; read them back as plain milliseconds */
+function norm(d){if(d&&d.at&&typeof d.at.toMillis==='function')d.at=d.at.toMillis();return d;}
 function clean(o){return JSON.parse(JSON.stringify(o));}
 function anon(){return ready.then(function(){return new Promise(function(res,rej){var off=auth.onAuthStateChanged(function(u){if(u){off();res(u);}else auth.signInAnonymously().catch(rej);});});});}
 
@@ -28,11 +38,11 @@ var Store={
   },
   watchMine:function(cb){
     if(!live)return lsub(function(){cb(lget(LS_REQ,{})[luid()]||null);});
-    anon().then(function(u){db.doc('requests/'+u.uid).onSnapshot(function(s){cb(s.exists?s.data():null);});});
+    anon().then(function(u){db.doc('requests/'+u.uid).onSnapshot(function(s){cb(s.exists?norm(s.data({serverTimestamps:'estimate'})):null);});});
   },
   submit:function(d){
     if(!live){var r=lget(LS_REQ,{});r[luid()]=Object.assign({},d,{uid:luid(),status:'pending',at:Date.now()});lset(LS_REQ,r);return Promise.resolve();}
-    return anon().then(function(u){return db.doc('requests/'+u.uid).set(Object.assign({},d,{uid:u.uid,status:'pending',at:Date.now()}));});
+    return anon().then(function(u){return db.doc('requests/'+u.uid).set(Object.assign({},d,{uid:u.uid,status:'pending',at:fb.firestore.FieldValue.serverTimestamp()}));});
   },
   leave:function(){
     if(!live){var r=lget(LS_REQ,{}),m=r[luid()];if(m){m.status='left';lset(LS_REQ,r);}return Promise.resolve();}
@@ -59,7 +69,7 @@ var Store={
   },
   watchRequests:function(cb){
     if(!live)return lsub(function(){var r=lget(LS_REQ,{});cb(Object.keys(r).map(function(k){return r[k];}));});
-    ready.then(function(){db.collection('requests').onSnapshot(function(q){cb(q.docs.map(function(d){return d.data();}));});});
+    ready.then(function(){db.collection('requests').onSnapshot(function(q){cb(q.docs.map(function(d){return norm(d.data({serverTimestamps:'estimate'}));}));});});
   },
   patchRequest:function(uid,patch){
     if(!live){var r=lget(LS_REQ,{});if(r[uid]){Object.assign(r[uid],patch);lset(LS_REQ,r);}return Promise.resolve();}

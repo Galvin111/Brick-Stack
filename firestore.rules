@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Only the signed-in organizer (Google account) can write the session.
+    // Only the signed-in organizer (verified Google account) can write the session.
     function isAdmin() {
       return request.auth != null
         && request.auth.token.firebase.sign_in_provider == 'google.com'
@@ -10,15 +10,35 @@ service cloud.firestore {
         && request.auth.token.email in ['garoudesu21@gmail.com'];
     }
 
-    function validRequest() {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Joins are only accepted while the organizer has check-ins open.
+    function checkInsOpen() {
+      return get(/databases/$(database)/documents/state/live).data.get('sessionOpen', false) == true;
+    }
+
+    // A name: starts with a letter or number; then letters, numbers, spaces, . ' ’ - ; 1–30 characters.
+    function validName(n) {
+      return n is string && n.size() >= 1 && n.size() <= 30
+        && n.matches("^[\\p{L}\\p{N}][\\p{L}\\p{M}\\p{N} .'’-]{0,29}$");
+    }
+
+    // A brand-new join request. The timestamp must be the server's own clock (it can't be faked).
+    function validRequest(uid) {
       let d = request.resource.data;
       return d.keys().hasOnly(['uid', 'name', 'skill', 'party', 'status', 'at'])
-        && d.uid == request.auth.uid
+        && d.uid == uid
         && d.status == 'pending'
-        && d.name is string && d.name.size() >= 1 && d.name.size() <= 30
+        && validName(d.name)
         && d.skill in ['Beginner', 'Novice', 'Intermediate', 'Advanced', 'Expert']
         && d.party in ['Solo', 'Pair', 'Group of 4']
-        && d.at is number;
+        && d.at == request.time;
+    }
+
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
 
     // The live session is shown on phones and the TV, so anyone can read it.
@@ -29,22 +49,28 @@ service cloud.firestore {
 
     // One join request per phone. Nothing here reaches the queue until the organizer approves it.
     match /requests/{uid} {
-      allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
-      allow create: if request.auth != null && request.auth.uid == uid && validRequest();
+      allow get: if isAdmin() || isOwner(uid);
+      allow list: if isAdmin();
+      allow create: if isOwner(uid) && checkInsOpen() && validRequest(uid);
       allow update: if isAdmin()
-        || (request.auth != null && request.auth.uid == uid && (
+        || (isOwner(uid) && (
               // leave: change only the status, to 'left'
-              (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+              (onlyChanges(['status'])
                 && request.resource.data.status == 'left'
                 && resource.data.status in ['pending', 'approved'])
               // take a break / come back: only the want field, only once approved
               || (resource.data.status == 'approved'
-                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['want'])
+                && onlyChanges(['want'])
                 && request.resource.data.want in ['break', 'play'])
-              // ask again after leaving, being declined or being removed
-              || (resource.data.status in ['declined', 'left', 'removed'] && validRequest())
+              // ask again after leaving, being declined or being removed (only while check-ins are open)
+              || (resource.data.status in ['declined', 'left', 'removed'] && checkInsOpen() && validRequest(uid))
             ));
       allow delete: if isAdmin();
+    }
+
+    // Everything else is closed.
+    match /{path=**} {
+      allow read, write: if false;
     }
   }
 }

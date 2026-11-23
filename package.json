@@ -1,0 +1,16 @@
+{
+  "name": "brickstack-queue",
+  "private": true,
+  "description": "BrickStack: open play queue for The Brick Club",
+  "scripts": {
+    "dev": "firebase serve --only hosting",
+    "deploy": "firebase deploy --only hosting",
+    "deploy:rules": "npm test && firebase deploy --only firestore:rules",
+    "deploy:all": "npm test && firebase deploy",
+    "test": "firebase emulators:exec --only firestore --project demo-brickstack \"node --test tests/rules.test.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "3.0.4",
+    "firebase": "10.14.1"
+  }
+}
