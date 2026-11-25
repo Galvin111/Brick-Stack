@@ -179,22 +179,22 @@ function processLeaves(){
 }
 
 /* ---------- views ---------- */
+function courtHead(c,status,right){return '<div class="court-head"><span class="cn">'+c.id+'</span><div class="cs"><small>Court</small><b>'+status+'</b></div>'+(right||'')+'</div>';}
 function courtCard(c){
   var size=S.settings.size, h;
   if(c.game){
-    h='<article class="court"><div class="court-head"><h3>Court '+c.id+'</h3><span class="pill">In play</span><span class="clock" data-clock="'+c.game.start+'">'+clock(c.game.start)+'</span></div>';
-    h+='<span class="team">'+esc(c.game.a.map(nm).join(' · '))+'</span><div class="vs">VS</div><span class="team b">'+esc(c.game.b.map(nm).join(' · '))+'</span>';
-    h+='<div class="court-actions"><button class="btn dark" data-act="result" data-id="'+c.id+'">End game</button>'+(c.game.a.length===2?'<button class="btn quiet" data-act="swap" data-id="'+c.id+'">Swap partners</button>':'')+'</div>';
+    h='<article class="court">'+courtHead(c,'In play','<span class="clock" data-clock="'+c.game.start+'">'+clock(c.game.start)+'</span>');
+    h+='<div class="teams"><span class="team">'+esc(c.game.a.map(nm).join(' · '))+'</span><div class="vs">vs</div><span class="team">'+esc(c.game.b.map(nm).join(' · '))+'</span></div>';
+    h+='<div class="court-actions"><button class="btn line" data-act="result" data-id="'+c.id+'">End game</button>'+(c.game.a.length===2?'<button class="btn quiet" data-act="swap" data-id="'+c.id+'">Swap partners</button>':'')+'</div>';
   }else if(c.hold.length){
     var need=size-c.hold.length, short=need-S.queue.length;
-    h='<article class="court open"><div class="court-head"><h3>Court '+c.id+'</h3><span class="pill hold">Winners staying</span></div>';
-    h+='<p>'+esc(c.hold.map(nm).join(' · '))+'</p><p class="note" style="margin-top:0">Needs '+need+' more.</p>';
+    h='<article class="court hold">'+courtHead(c,'Winners staying');
+    h+='<div class="teams"><span class="team">'+esc(c.hold.map(nm).join(' · '))+'</span><p class="note">Needs '+need+' more.'+(short>0?' Waiting for '+plural(short,'more player')+' in the queue.':'')+'</p></div>';
     h+='<div class="court-actions"><button class="btn primary" data-act="fill" data-id="'+c.id+'"'+(short>0?' disabled':'')+'>Start game</button><button class="btn quiet" data-act="release" data-id="'+c.id+'">Clear</button></div>';
-    if(short>0)h+='<p class="note">Waiting for '+plural(short,'more player')+' in the queue.</p>';
   }else{
     var miss=size-S.queue.length;
-    h='<article class="court open"><div class="court-head"><h3>Court '+c.id+'</h3><span class="pill open">Open</span></div>';
-    h+=miss>0?'<p>Waiting for '+plural(miss,'more player')+' in the queue.</p>':'<p>Ready for the next group: '+esc(names(previewGroups()[0]))+'</p>';
+    h='<article class="court open">'+courtHead(c,'Open');
+    h+='<div class="teams">'+(miss>0?'<p class="note">Waiting for '+plural(miss,'more player')+' in the queue.</p>':'<p class="note">Next group is ready</p><span class="team">'+esc(names(previewGroups()[0]))+'</span>')+'</div>';
     h+='<div class="court-actions"><button class="btn primary" data-act="fill" data-id="'+c.id+'"'+(miss>0?' disabled':'')+'>Start game</button></div>';
   }
   return h+'</article>';
@@ -202,7 +202,7 @@ function courtCard(c){
 function pendingPanel(){
   var list=pending();
   if(!list.length)return '';
-  var h='<section class="up pend" aria-label="Waiting for approval"><div class="sec-head"><h2>Waiting for approval</h2><span>'+list.length+'</span></div>';
+  var h='<section class="up pend" aria-label="Waiting for approval"><div class="sec-head"><h2>Waiting for approval</h2><span class="count">'+list.length+'</span></div>';
   list.forEach(function(r){
     h+='<div class="group"><div class="who"><b>'+esc(r.name)+'</b><small>'+esc(r.skill)+' · asked '+ago(r.at)+' ago</small></div><button class="btn primary small" data-act="approve" data-uid="'+esc(r.uid)+'">Approve</button><button class="btn quiet small" data-act="decline" data-uid="'+esc(r.uid)+'" aria-label="Decline '+esc(r.name)+'">Decline</button></div>';
   });
@@ -210,12 +210,12 @@ function pendingPanel(){
 }
 function upNext(){
   var size=S.settings.size, h='<section class="up" aria-label="Up next"><div class="sec-head"><h2>Up next</h2><span>'+plural(S.queue.length,'player')+' · '+plural(Math.ceil(S.queue.length/size),'group')+'</span></div>';
-  if(!S.queue.length)h+='<p class="note" style="margin:0 0 12px">The queue is empty. Players come back here when their game ends.</p>';
+  if(!S.queue.length)h+='<p class="note">The queue is empty. Players come back here when their game ends.</p>';
   var open=S.courts.filter(function(c){return !c.game;})[0];
   previewGroups().forEach(function(g,i){
     var full=g.length===size, first=P(g[0]);
-    h+='<div class="group"><span class="n">'+(i+1)+'</span><div class="who"><b>'+esc(names(g))+(full?'':' + '+(size-g.length)+' open')+'</b><small>Waiting <span data-since="'+first.since+'">'+ago(first.since)+'</span> · Levels '+g.map(lvl).join(', ')+'</small></div>';
-    if(i===0&&full&&open)h+='<button class="btn dark small" data-act="fill" data-id="'+open.id+'">Send</button>';
+    h+='<div class="group"><span class="n'+(i===0?' first':'')+'">'+(i+1)+'</span><div class="who"><b>'+esc(names(g))+(full?'':' + '+(size-g.length)+' open')+'</b><small>Waiting <span data-since="'+first.since+'">'+ago(first.since)+'</span> · Levels '+g.map(lvl).join(', ')+'</small></div>';
+    if(i===0&&full&&open)h+='<button class="btn line small" data-act="fill" data-id="'+open.id+'">Send</button>';
     h+='</div>';
   });
   var breaks=S.players.filter(function(p){return p.status==='break';});
@@ -235,9 +235,8 @@ function viewCourts(){
   }
   var inUse=S.courts.filter(function(c){return c.game;}).length;
   var waits=S.queue.map(function(id){return mins(P(id).since);}), avg=waits.length?Math.round(waits.reduce(function(a,b){return a+b;},0)/waits.length):0;
-  var h='<div class="page-head"><div><h1>Live board</h1><p>'+plural(S.queue.length,'player')+' waiting</p></div><div class="head-r"><span class="live">Live · '+inUse+' of '+S.courts.length+' in play</span>'+courtStepper()+joinToggle()+'</div></div>';
-  h+='<div class="stats"><div class="stat"><small>Courts in use</small><b>'+inUse+' / '+S.courts.length+'</b></div><div class="stat"><small>In queue</small><b>'+S.queue.length+'</b></div><div class="stat"><small>Average wait</small><b>'+avg+' min</b></div><div class="stat"><small>Games played</small><b>'+S.history.length+'</b></div></div>';
-  h+='<div class="board"><section aria-label="Courts"><div class="sec-head"><h2>Courts</h2>'+(S.settings.auto?'<span>Auto-assign: On</span>':'')+'</div><div class="courts">'+S.courts.map(courtCard).join('')+'</div></section>'+'<div>'+pendingPanel()+upNext()+'</div></div>';
+  var h='<div class="page-head"><div><h1>Live board</h1><p><b>'+inUse+' of '+S.courts.length+'</b> courts in play · <b>'+S.queue.length+'</b> waiting · average wait <b>'+avg+' min</b> · <b>'+S.history.length+'</b> '+(S.history.length===1?'game':'games')+' played</p></div><div class="head-r">'+courtStepper()+joinToggle()+'</div></div>';
+  h+='<div class="board"><section aria-label="Courts"><div class="sec-head"><h2>Courts</h2>'+(S.settings.auto?'<span>Auto-assign on</span>':'')+'</div><div class="courts">'+S.courts.map(courtCard).join('')+'</div></section>'+'<div class="rail">'+pendingPanel()+upNext()+'</div></div>';
   return h;
 }
 function statusText(p){
@@ -290,8 +289,10 @@ function printQr(){
   w.document.close();w.focus();setTimeout(function(){w.print();},300);
 }
 function renderFoot(){
-  var t=new Date(S.started);
-  foot.innerHTML='<i>SESSION LIVE</i><b>Open Play</b>Started '+t.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  if(!booted){foot.innerHTML='';return;}
+  var t=new Date(S.started).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  foot.className='side-foot'+(S.sessionOpen?'':' off');
+  foot.innerHTML='<span class="dot"></span>'+(S.sessionOpen?'Check-ins open':'Check-ins closed')+'<small>· started '+t+'</small>';
 }
 function render(){
   var v=view();

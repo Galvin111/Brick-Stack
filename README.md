@@ -48,11 +48,19 @@ Brick club queue/
 | Name  | Hex       | Use                     |
 |-------|-----------|-------------------------|
 | Cream | `#F3EADB` | page background         |
-| Ink   | `#25201D` | text, dark panels       |
-| Brick | `#A93F27` | primary buttons, accent |
-| Lime  | `#D4E64A` | the ball, live/next tags |
+| Ink   | `#25201D` | text (never a fill)     |
+| Brick | `#972D1E` | main buttons, big numbers, open courts, the top stripe |
+| Lime  | `#CBE03B` | the ball, "you" tags, live dot |
 
-Font: [Outfit](https://fonts.google.com/specimen/Outfit) (loaded from Google Fonts).
+Brick and lime match the Brick Club logo. The logo mark is `assets/brand/mark.svg`
+(the favicon is the same mark without the ball's holes, which blur at small sizes).
+
+Fonts (Google Fonts):
+- [Archivo](https://fonts.google.com/specimen/Archivo): everything. Headings, court numbers and clocks use
+  its Extra Condensed width (`font-stretch:62%`, weight 800, uppercase); names and body text use normal width.
+- [Outfit](https://fonts.google.com/specimen/Outfit) Bold: only the "brick club" wordmark next to the logo.
+
+Look: square corners (2px), thin rules instead of cards, no dark backgrounds.
 
 ## Preview and deploy
 
